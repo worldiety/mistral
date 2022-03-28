@@ -1,0 +1,6 @@
+test:
+	go vet ./...
+	go test ./...
+
+picky:
+	golangci-lint run --enable-all --exclude-use-default=false
