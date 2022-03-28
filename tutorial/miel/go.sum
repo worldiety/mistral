@@ -1,0 +1,4 @@
+github.com/worldiety/mistral/lib/go/dsl v0.0.0-20220328143152-233272b31e89 h1:AfQzwvAXvIh6OOIzyHVnGJfoEsqCajzI5v5LG5kGoBc=
+github.com/worldiety/mistral/lib/go/dsl v0.0.0-20220328143152-233272b31e89/go.mod h1:RKVzGjmv6XRLI0XRJ5CC2EE0uSc5WdhgJmVN98a8Ku0=
+golang.org/x/text v0.3.7 h1:olpwvP2KacW1ZWvsR7uQhoyTYvKAupfQrRGBFM352Gk=
+golang.org/x/text v0.3.7/go.mod h1:u+2+/6zg+i71rQMx5EYifcz6MCKuco9NR6JIITiCfzQ=

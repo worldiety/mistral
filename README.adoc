@@ -1,0 +1,13 @@
+= mistral
+
+mistral software development kit including examples and client bindings for different languages.
+
+== MiEL
+
+MiEL is the Mistral Expression Language and defined as a Go-like module in link:lib/go/dsl[dsl-module].
+For your convenience, there is a link:tutorial/miel[MiEL starter tutorial].
+
+== License
+
+All example source codes, if not otherwise noted, are licensed under a BSD 2-Clause License.
+However, the Mistral database itself has a proprietary license which can be acquired from https://www.worldiety.de[worldiety GmbH].

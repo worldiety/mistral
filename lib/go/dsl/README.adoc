@@ -1,0 +1,6 @@
+= dsl
+
+The module DSL provides a Go-like Module which can be imported by regular Go projects to build stub-versions of MiEL calculation kernels respective stored procedures.
+This is especially useful to allow a first-class developer experience using your usual day to day integrated development environments like IntelliJ or Visual Studio Code.
+
+To get started, please see the link:../../../tutorial/miel[MiEL tutorial] for details.

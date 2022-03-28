@@ -1,0 +1,42 @@
+= MiEL
+
+MiEL is the Mistral Expression Language and brings your calculation to the data.
+Instead of wasting processing power, memory or network bandwidth, MiEL optimizes your resource usage by avoiding memory copies and serialization as much as possible.
+This module contains an example for the v1 API, which shares large parts of its grammar and semantics with the https://go.dev/ref/spec[Go language specification].
+Please note, that even though MiEL looks like Go, it is not Go at all and is executed within a sandbox without a standard library.
+Especially, you should avoid custom number-crunching code and instead rely on the intrinsic primitives for efficiency.
+
+== Documentation
+
+You can find the latest rendered documentation in the https://pkg.go.dev/github.com/worldiety/mistral/lib/go/dsl[Go docs].
+
+== Latest version
+
+To ensure, that you have the latest version, you can by-pass the official module Proxy and get the latest dependency with its stub implementation as follows:
+
+`GOPROXY=direct go get github.com/worldiety/mistral/lib/go/dsl`
+
+== Playground
+
+Also, you can simply start exploring the API using the https://go.dev/play/p/ZJTTj_X2Ti1[Go Playground].
+Please note, that this only contains a non-functional stub implementation, however this is useful to check the correctness of your grammar.
+
+== IDE support and autocompletion
+
+The recommended IDE is currently https://www.jetbrains.com/de-de/go/[IntelliJ Goland] but Visual Studio Code or vim will also do.
+Goland provides syntax highlighting, code completion, linting and static type checking out of the box.
+
+[source,bash]
+----
+# clone the entire repo
+git clone https://github.com/worldiety/mistral.git
+# change dir to this tutorial module
+cd mistral.git/tutorial/miel
+# execute locally to check grammar and static type checks
+go run main.go
+----
+
+== Deployment
+
+Authorize and login into a running Mistral instance and just copy and paste your program into the developer dashboard.
+Alternatively you can use the `api/v1/proc/` REST APIs.
