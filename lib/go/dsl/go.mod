@@ -1,4 +1,4 @@
-module github.com/worldiety/mistral.git/lib/go/dsl
+module github.com/worldiety/mistral/lib/go/dsl
 
 // keep intentionally at 1.17, because the MiEL interpreter supports only a subset of 1.17
 go 1.17
