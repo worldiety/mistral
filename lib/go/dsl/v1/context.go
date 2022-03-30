@@ -110,8 +110,8 @@ func (s *stubBuilder) Parameter(f func() (in interface{}, out interface{})) Proc
 	return s
 }
 
-func (s *stubBuilder) Start(evaluator Evaluator) {
-	evaluator(context.TODO()) // this is stub-only
+func (s *stubBuilder) Start(eval Evaluator) {
+	// stub does intentionally not execute
 }
 
 func sortedLangTags(m map[string]Translation) []string {

@@ -41,6 +41,19 @@ func (r *Range) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
+// MustInterval returns the inclusive Interval representation of this Range. See also Interval.
+func (r Range) MustInterval() Interval {
+	min, max, err := r.Interval()
+	if err != nil {
+		panic(err)
+	}
+
+	return Interval{
+		Min: min,
+		Max: max,
+	}
+}
+
 // Interval parses and returns the min and max unix timestamps, which have always 'inclusive' semantics.
 // Min and max are represented as a unix timestamp in seconds.
 func (r Range) Interval() (min, max int64, err error) {

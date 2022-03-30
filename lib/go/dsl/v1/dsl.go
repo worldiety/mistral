@@ -87,53 +87,78 @@ func Query(ctx context.Context) DB {
 // DB describes the contract to the Mistral database and provides a bunch of query methods.
 type DB interface {
 	// Bucket loads the metadata about the bucket which usually represents a device which generates a bunch of
-	// time series data.
-	Bucket(id UUID) Bucket
+	// time series data. Returns false if no such bucket exist. Panics for any other failure.
+	Bucket(id UUID) (Bucket, bool)
 
 	// Metric loads the metric metadata and describes a specific time series data which is required to interpret
-	// the meaning of x and y values.
-	Metric(id UUID) Metric
+	// the meaning of x and y values. Returns false if no such metric exist. Panics for any other failure.
+	Metric(id UUID) (Metric, bool)
 
 	// ScaleOf returns the scale for the given metric ID or returns 1 if not found. A multiple of 10,
 	// usually in the range of 1, 10, 100 or 1000.
 	ScaleOf(metricID UUID) int64
 
-	// FindRanges returns all metrics which have at least a single data point. If multiple devices have
-	// the same metric, the overall min/max keys are determined and returned. The returned ranges are returned
-	// in request order.
-	FindRanges(deviceIDs []UUID) []DataRange
+	// FindRanges returns all metrics which have at least a single data point and therefore represents a kind of
+	// coverage. If multiple buckets (devices) have
+	// the same metric, the overall min/max keys are determined and returned. The returned ranges are sorted by metric
+	// id.
+	FindRanges(bucketIDs []UUID) []DataRange
 
-	// Coverage returns true if the metric is covered by the given device. Then also Min and Max have valid values.
-	Coverage(deviceId, metricId UUID) (DataRange, bool)
-
-	// MinMax returns the minimum and maximum timestamp for the given metric.
-	MinMax(deviceID, metricID UUID) (min, max int64, exists bool)
+	// MinMax returns the minimum and maximum timestamp for the given metric within the denoted bucket (device).
+	MinMax(bucketID, metricID UUID) DataRange
 
 	// FindInRange loads those (time) series of the given buckets identified by the metric id, which exists.
-	FindInRange(bucketIDs []UUID, metricID UUID, r Range) Group
-
-	// Metrics returns all declared metrics (there may be other undeclared). If the list is empty or nil,
-	// all available metrics are returned.
-	Metrics(metricIDs UUIDs) []string
-
-	// Buckets returns all declared buckets (there may be undeclared) identified by the identifier list.
-	// If the list is empty or nil, all available buckets are returned.
-	Buckets(bucketIDs UUIDs) []string
+	FindInRange(bucketIDs []UUID, metricID UUID, r Interval) Group
 }
 
-// TranslateName is a helper to match and return the translated Name of a Bucket or Metric. This is convenience
-// helper to deliver a ready-to-use chart legend or axis description.
-func TranslateName(ctx context.Context, translated interface {
+type translatedEntity interface {
 	String() string
 	LanguageTags() []string
 	Translated() map[string]Translation
-}) string {
+}
+
+// translateName is a helper to match and return the translated Name of a Bucket or Metric. This is convenience
+// helper to deliver a ready-to-use chart legend or axis description.
+func translateName(ctx context.Context, translated translatedEntity) string {
 	tag := MatchLanguage(ctx, translated.LanguageTags()...)
 	if tag == "" {
 		return translated.String()
 	}
 
 	return translated.Translated()[tag].Name
+}
+
+func translateNames(ctx context.Context, ids []UUID, f func(UUID) (translatedEntity, bool)) []string {
+	names := make([]string, 0, len(ids))
+	for _, id := range ids {
+		info, exists := f(id)
+		if !exists {
+			names = append(names, id.String())
+		}
+
+		name := translateName(ctx, info)
+		names = append(names, name)
+	}
+
+	return names
+}
+
+// BucketNames translates the given buckets identified by their identifiers, if possible. If no translation exists,
+// the default name is returned. If no metadata is available, the string representation of the ID is returned.
+func BucketNames(ctx context.Context, bucketIDs []UUID) []string {
+	db := Query(ctx)
+	return translateNames(ctx, bucketIDs, func(uuid UUID) (translatedEntity, bool) {
+		return db.Bucket(uuid)
+	})
+}
+
+// MetricNames translates the given metrics identified by their identifiers, if possible. If no translation exists,
+// the default name is returned. If no metadata is available, the string representation of the ID is returned.
+func MetricNames(ctx context.Context, metricIDs []UUID) []string {
+	db := Query(ctx)
+	return translateNames(ctx, metricIDs, func(uuid UUID) (translatedEntity, bool) {
+		return db.Metric(uuid)
+	})
 }
 
 // Request parses the body from the given context into the given pointer. Panics for illegal arguments.
@@ -303,11 +328,14 @@ func (t Times) DayOf(offset int) Interval {
 }
 
 // A DataRange defines a metric id and the range of min/max x data it provides. Usually in Seconds since
-// Unix Epoch.
+// Unix Epoch. The meaning of ID is undefined and may be the zero UUID or refer to a bucket or metric or
+// a bucket specific metric series. Inspect the according documentation of the exact method which
+// creates such DataRange.
 type DataRange struct {
-	ID   UUID
-	MinX int64
-	MaxX int64
+	ID    UUID
+	MinX  int64
+	MaxX  int64
+	Valid bool
 }
 
 // Interval contains the min and max unix timestamps, which have always 'inclusive' semantics. Usually in Seconds since
