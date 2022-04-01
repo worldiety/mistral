@@ -1,0 +1,599 @@
+openapi: 3.0.3
+info:
+  title: mistral/procs
+  version: 1.16.0
+  description: Mistral has a programmable query pipeline engine and supports direct data evaluation and transformation without large datasets ever leaving the server. The idea is to bring the calculation to the data and not vice versa. Mistral has its own expression language called _MiEL_ which is available in a Go-like syntax paired mostly with a functional programming paradigma. Currently, avoid number crunching code where possible and stick to the pipeline primitives whenever applicable. All text or json encodings must be in UTF-8.
+paths:
+  '/api/v1/procs/meta':
+    get:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - meta
+      summary: Returns the meta data for all available procs.
+      description: This endpoint returns the entire set of all available stored procedures.
+      responses:
+        '200':
+          description: Returns the meta data.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProcInfo'
+
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+        '404':
+          description: 'Not found is returned, if no meta data exists. However the device itself may exist and may have metrics.'
+        '500':
+          description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
+
+  '/api/v1/procs/meta/{procID}':
+    get:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - meta
+      summary: Returns the meta data for a specific proc.
+      description: This endpoint returns the meta data about a single stored procedure.
+      parameters:
+        - name: procID
+          in: path
+          description: 'ID of the stored procedure.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Returns the meta data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcInfo'
+
+
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+        '404':
+          description: 'Not found is returned, if no meta data exists. However the device itself may exist and may have metrics.'
+        '500':
+          description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - meta
+      summary: Updates the meta data for proc.
+      description: A device may have additional meta data, like a name or information about the origin from which it has been imported.
+      parameters:
+        - name: procID
+          in: path
+          description: 'ID of the stored procedure.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcUpdateInfo'
+
+      responses:
+        '201':
+          description: If the meta data has been updated successfully.
+
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+
+
+  '/api/v1/procs/parameter/{procID}':
+    get:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - meta
+      summary: Returns the input and output parameter definition, if available.
+      description: This endpoint returns the examples and structures about the request input and response output parameter specification.
+        The MiEL code will get executed partially to get this information.
+      parameters:
+        - name: procID
+          in: path
+          description: 'ID of the stored procedure.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Returns the parameter data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParamInfo'
+
+
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+        '404':
+          description: 'Not found is returned, if no meta data exists. However the device itself may exist and may have metrics.'
+        '500':
+          description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
+
+
+
+  '/api/v1/procs/src/{procID}':
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - source
+      summary: Inserts or updates the actual stored procedure code.
+      description: Writes the actual source code in the declared version of _MiEL_, either declarative or imperative style. See the language and version specification for details.
+      parameters:
+        - name: procID
+          in: path
+          description: 'ID of the stored procedure.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          "text/x-go":
+            schema:
+              $ref: '#/components/schemas/MiEL'
+
+
+
+      responses:
+        '201':
+          description: If the meta data has been updated successfully.
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter. Also returned for every parsing or compiling error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParserError'
+
+    get:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - source
+      summary: Returns the source code.
+      description: Returns the actual stored procedure code. Inspect the returned content type to distinguish the different code variants.
+      parameters:
+        - name: procID
+          in: path
+          description: 'ID of the stored procedure.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+
+
+
+      responses:
+        '200':
+          description: If the meta data has been updated successfully.
+          content:
+            "text/x-go":
+              schema:
+                $ref: '#/components/schemas/MiEL'
+
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+
+
+    delete:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - source
+      summary: Removes a script and its metadata.
+      description: Removes a script and its metadata.
+      parameters:
+        - name: procID
+          in: path
+          description: 'ID of the stored procedure.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+
+
+
+      responses:
+        '200':
+          description: If the meta data has been removed successfully.
+
+
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+
+  '/api/v1/procs/check':
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - source
+      summary: Checks the syntax of the given MiEL proc without storing.
+      description: Useful to provide instant validation feedback to the user. This is like eval but without execution of the actual evaluation code.
+
+      requestBody:
+        required: true
+        content:
+          "text/x-go":
+            schema:
+              $ref: '#/components/schemas/MiEL'
+      responses:
+        '200':
+          description: If the meta data has been checked successfully.
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter. Also returned for every parsing or compiling error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParserError'
+
+
+  '/api/v1/procs/format':
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - source
+      summary: Formats the syntax into the canonical form of the given MiEL proc without storing.
+      description: Useful to provide instant validation feedback to the user. This is like eval but without execution of the actual evaluation code.
+
+      requestBody:
+        required: true
+        content:
+          "text/x-go":
+            schema:
+              $ref: '#/components/schemas/MiEL'
+      responses:
+        '200':
+          description: If the meta data has been updated successfully.
+          content:
+            "text/x-go":
+              schema:
+                $ref: '#/components/schemas/MiEL'
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter. Also returned for every parsing or compiling error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParserError'
+
+
+  '/api/v1/procs/eval':
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - execute
+      summary: Evals the syntax of the given MiEL proc.
+      description: Useful to avoid one-shot scripts to be stored and loaded over again. Provide instant validation feedback to the user.
+      parameters:
+        - in: header
+          name: X-TZ
+          schema:
+            $ref: '#/components/schemas/Timezone'
+        - in: header
+          name: Viewport-Width
+          schema:
+            $ref: '#/components/schemas/ViewportWidth'
+
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: # Request payload
+              type: object
+              properties: # Request parts
+                params:
+                  $ref: '#/components/schemas/ScriptParam'
+                src:
+                  $ref: '#/components/schemas/MiEL'
+
+            encoding:
+              params:
+                contentType: application/json
+              script:
+                contentType: text/x-go
+      responses:
+        '200':
+          description: If the meta data has been checked successfully.
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter. Also returned for every parsing or compiling error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParserError'
+
+
+  '/api/v1/procs/run/{procID}':
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - execute
+      summary: Executes a stored MiEL procedure.
+      description: Loads the stored procedure by its ID and execute it with the given parameters submitted as a json body.
+      parameters:
+        - in: header
+          name: X-TZ
+          schema:
+            $ref: '#/components/schemas/Timezone'
+        - in: header
+          name: Viewport-Width
+          schema:
+            $ref: '#/components/schemas/ViewportWidth'
+
+        - name: procID
+          in: path
+          description: 'ID of the stored procedure.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+
+
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: '#/components/schemas/ScriptParam'
+
+
+      responses:
+        '200':
+          description: If the meta data has been checked successfully.
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter. Also returned for every parsing or compiling error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParserError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    ProcInfo:
+      type: object
+      description: ProcInfo contains the full set of readable meta data for a proc.
+      required:
+        - id
+        - name
+        - description
+        - tags
+        - translations
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique ID of the expression.
+        tags:
+          type: array
+          description: An arbitrary set of strings used as tags, e.g. indicating specific topics or templates.
+          example: [ "apexcharts","daily" ]
+          items:
+            type: string
+        name:
+          type: string
+          description: A short but arbitrary debug name in the default language for an end-user.
+            Use the translations field for language specific values.
+          example: daily avg
+        description:
+          type: string
+          description: A longer and more descriptive text in the default language for an end-user about what the expression is about. Use the translations field for language specific values.
+          example: a simple daily average calculation.
+        translations:
+          $ref: '#/components/schemas/ProcInfoTranslation'
+
+
+    ProcUpdateInfo:
+      type: object
+      required:
+        - name
+        - description
+        - tags
+        - translations
+      properties:
+        tags:
+          type: array
+          description: An arbitrary set of strings used as tags, e.g. indicating specific topics or templates.
+          example: [ "apexcharts","daily" ]
+          items:
+            type: string
+        name:
+          type: string
+          description: A short but arbitrary debug name in the default language for an end-user.
+            Use the translations field for language specific values.
+          example: daily avg
+        description:
+          type: string
+          description: A longer and more descriptive text in the default language for an end-user about what the expression is about. Use the translations field for language specific values.
+          example: a simple daily average calculation.
+        translations:
+          $ref: '#/components/schemas/ProcInfoTranslation'
+
+
+    ProcInfoTranslation:
+      type: object
+      description: Holds translations for the name and summary fields. Keys are arbitrary in the RFC 5646 format.
+      additionalProperties:
+        type: object
+        required:
+          - name
+          - description
+        properties:
+          name:
+            type: string
+          description:
+            type: string
+
+      example:
+        en:
+          "name": daily average
+          "description": Calculates the sampled daily average of a single device and metric in the given IANA timezone.
+        "de-DE":
+          "name": Tagesdurchschnitt
+          "description": Berechnet die auf 10min Intervalle gerundeten Tagesdurchschnittswerte eines Jahres mit der gegebenen IANA Zeitzone.
+
+    ParserError:
+      type: object
+      required:
+        - error
+        - line
+        - column
+      properties:
+        error:
+          type: string
+          description: the error message detailing out what is wrong.
+          example: unresolved type 'Pointz'
+        line:
+          type: integer
+          description: the line number, 1-based.
+          example: 23
+        column:
+          type: integer
+          description: the column, 1-based.
+          example: 2
+
+
+    Timezone:
+      type: string
+      description: An IANA time zone identifier like Europe/Berlin.
+      example: Europe/Berlin
+
+    ViewportWidth:
+      type: integer
+      description: A hint from the client for the current view port width in css pixel.
+      example: 320
+
+    ScriptParam:
+      type: object
+      description: In general the ScriptParam is an arbitrary json object. However, it must match properly to exact that struct which is expected and parsed by a specific script.
+      example: { "bucketID": "550e8400-e29b-11d4-a716-446655440000", "metricID": "550e8400-e29b-11d4-a716-446655440000" }
+
+    ParamInfo:
+      type: object
+      description: ParamInfo describes the input and output specification of a MiEL program.
+        However, this is just a hint from sane programs.
+      required:
+        - example
+      properties:
+        example:
+          type: object
+          required:
+            - request
+            - response
+          properties:
+            request:
+              type: object
+              description: An arbitrary response example.
+            response:
+              type: object
+              description: An arbitrary response example.
+
+    MiEL:
+      type: string
+      example: |
+        package main 
+
+        import (
+        	"context"
+        	miel "github.com/worldiety/mistral/lib/go/dsl/v1"
+        )
+        
+        // Request is an arbitrary defined input parameter type parsed from an application/json body.
+        // See also lines 41 and 42 for deserialization.
+        type Request struct {
+        	Portfolio miel.UUIDs         `json:"device-ids"`
+        	Metric    miel.UUID          `json:"metric-id"`
+        	Type      miel.AggregateFunc `json:"type"`
+        	Range     miel.Range
+        	TZ        miel.TZ
+        }
+        
+        // Response is an arbitrary defined output parameter type serialized as an application/json body.
+        type Response struct {
+        	Portfolio     miel.FPoints
+        	MyDevices     miel.FGroup
+        	MyDeviceNames []string
+        }
+        
+        // Declare is a function which serves two purposes:
+        //  1. declare which types are input and output parameters. This is best-practice to generate automatic documentation.
+        //  2. return examples for each, also just for automatic documentation.
+        // See also line 58.
+        func Declare() (interface{}, interface{}) {
+        	return Request{
+        		Portfolio: miel.UUIDs{miel.UUID{}},
+        		Type:      miel.AvgY,
+        	}, Response{}
+        }
+        
+        // Eval provides the actual calculation kernel and operation. It extracts concrete instances from the given context.
+        // The implementation must be thread-safe and must not share any state between executions.
+        // It is undefined, whether Eval is executed serializable, concurrently and/or on multiple independent Mistral cluster
+        // instances at the same time.
+        // See also line 59.
+        func Eval(ctx context.Context) {
+        	var request Request         // declare a variable using our custom request type
+        	miel.Request(ctx, &request) // parse our custom request type
+        
+        	loc := request.TZ.MustParse()
+        	miel.Query(ctx).
+        		FindInRange(request.Portfolio, request.Metric, request.Range).
+        		ForEach(func(pts miel.Points) miel.Points {
+        			return pts.GroupByDay(miel.NoDrift, miel.AlignGroupStart, loc).Reduce(miel.AvgY)
+        		})
+        
+        	miel.Response(ctx, Response{})
+        }
+        
+        // main provides the default launching point.
+        func main() {
+        	miel.Configure().
+        		Parameter(Declare).
+        		Start(Eval) // eventually execute the Eval function
+        }
+
+
+        
+

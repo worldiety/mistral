@@ -1,0 +1,114 @@
+openapi: 3.0.3
+info:
+  title: mistral/admin
+  version: 1.15.0
+paths:
+  '/api/v1/admin/bulk/devices/renames':
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - admin
+      summary: Renames an entire device to a different device.
+      description: This endpoint resides in the dangerzone of all admin tools because it is not entirely protected
+        by transactions. It also acquires a global lock to protect against weired (logical) races, while performing a
+        rename (think of inserting more data). A change of an ID will rewrite the entire device file, so changing all
+        IDs will rewrite your entire dataset. While rewriting, the entire server is blocked and will issue timeouts
+        on all endpoints (besides healthz). If the server crashes while performing this operation, the result may
+        be an inconsistent data set, which may have files named after old ids causing a data loss after writing
+        to the new or old id then. So if you encounter a crash, better restore from a clean backup and try again.
+        While loading, we try to detect such broken data sets and reject to start. Note that all pending changes
+        are flushed before. If successful, there is no more pending data left and everything is consistent.
+
+        The metadata is updated similiarly, however metadata is treated entirely optional. The metadata of old
+        replaces the metadata of new entirely. If old does not exist, new is replaced with empty defaults. If old
+        exists it will be deleted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkDeviceRename'
+
+      responses:
+        '200':
+          description: 'Request has been applied.'
+        '403':
+          description: 'Invalid bearer token'
+
+  '/api/v1/admin/bulk/metrics/merges':
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - admin
+      summary: Merges all source values into the destination metric values.
+      description: Takes the given transitions and applies them eventually from old to new.
+        Old values are deleted and put on top of potentially existing new values. Flush will force an immediate consistency.
+        If used wrong (e.g. single metric merge and flush sequentially), flush will cause a massive write amplification
+        which can break the servers' storage system (e.g. 13 EiB to write for 700 metrics requiring 20TiB disk usage).
+        It is valid to merge empty or not existing metrics into existing.
+        It is also valid to merge existing metrics into empty or not existing metrics.
+        Note that due to the nature of distinct meta and metrics databases, the consistency between the two cannot
+        be guaranteed. So a failure may result in an invalid divergent state, even though each of them may still be
+        consistent from their individual perspective.
+      parameters:
+        - name: 'X-Flush'
+          in: header
+          description: 'force flush, blocks and makes changes immediately visible. This hurts performance seriously.'
+          required: false
+          schema:
+            type: boolean
+            default: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkMetricsMergeMapping'
+
+      responses:
+        '202':
+          description: 'Request has been accepted for processing.'
+        '403':
+          description: 'Invalid bearer token'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    BulkMetricsMergeMapping:
+      type: object
+      properties:
+        dst:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Represents UUIDs of metrics which are the destination to merge the source values into.
+        src:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Represents UUIDs of metrics which are the source to load from.
+
+
+    BulkDeviceRename:
+      type: object
+      properties:
+        old:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Represents UUIDs of old device ids.
+        new:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Represents UUIDs of new device ids.

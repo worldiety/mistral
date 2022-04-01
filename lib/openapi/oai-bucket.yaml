@@ -1,0 +1,197 @@
+openapi: 3.0.3
+info:
+  title: mistral/metadata
+  version: 1.15.0
+paths:
+  '/api/v1/devices/{deviceId}/meta':
+    get:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - meta
+      summary: Returns the meta data for a device.
+      description: A device may have additional meta data, like a name or information about the origin from which it has been imported.
+      parameters:
+        - name: deviceId
+          in: path
+          description: 'Id of a device.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Returns the meta data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceMetaData'
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+        '404':
+          description: 'Not found is returned, if no meta data exists. However the device itself may exist and may have metrics.'
+        '500':
+          description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
+
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - meta
+      summary: Updates the meta data for a device.
+      description: A device may have additional meta data, like a name or information about the origin from which it has been imported.
+      parameters:
+        - name: deviceId
+          in: path
+          description: 'Id of a device.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceMetaData'
+
+      responses:
+        '200':
+          description: If the meta data has been updated successfully.
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+
+
+  '/api/v1/metrics/{metricId}/meta':
+    get:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - meta
+      summary: Returns the meta data for a metric.
+      description: A metric may have additional meta data, like a name or information about the origin from which it has been imported.
+      parameters:
+        - name: metricId
+          in: path
+          description: 'Id of a metric.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Returns the meta data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+        '404':
+          description: 'Not found is returned, if no meta data exists. However the metric itself may exist for certain devices.'
+        '500':
+          description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
+
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - meta
+      summary: Updates the meta data for a metric.
+      description: A metric may have additional meta data, like a name or information about the origin from which it has been imported.
+      parameters:
+        - name: metricId
+          in: path
+          description: 'Id of a metric.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricMetaData'
+
+      responses:
+        '200':
+          description: If the meta data has been updated successfully.
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    DeviceMetaData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The ID of the device.
+        sources:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              id:
+                description: the unique id of the source
+                type: string
+              value:
+                $ref: "#/components/schemas/Source"
+        xattr:
+          type: object
+          description: arbitrary optional map of any kind of attributes.
+
+    MetricMetaData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The ID of the metric.
+        scale:
+          type: integer
+          description: mistral can only process integers. So in case of floats or decimals this indicates the scale to multiply or divide the numbers before inserting or after querying.
+        resolution:
+          type: string
+          description: Resolution is either "daily" or "monthly" or a duration (like 10m). A duration string is a possibly signed sequence of decimal numbers, each with optional fraction and a unit suffix, such as "300ms", "-1.5h" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+        sources:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              id:
+                description: the unique id of the source
+                type: string
+              value:
+                $ref: "#/components/schemas/Source"
+
+
+        xattr:
+          type: object
+          description: arbitrary optional map of any kind of attributes.
+
+    Source:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Type is an arbitrary id or name of to categorize the source.
+        fields:
+          type: object
+          description: arbitrary map of key/values.
+

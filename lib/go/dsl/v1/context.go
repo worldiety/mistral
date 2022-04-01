@@ -65,8 +65,8 @@ func WithDB(ctx context.Context, db DB) context.Context {
 }
 
 func mustRequest(ctx context.Context) *http.Request {
-	req := ctx.Value(ctxHttpRequest).(*http.Request)
-	if req == nil {
+	req, ok := ctx.Value(ctxHttpRequest).(*http.Request)
+	if !ok || req == nil {
 		panic("context does not contain a http.Request")
 	}
 

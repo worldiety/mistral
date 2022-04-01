@@ -1,0 +1,449 @@
+openapi: 3.0.3
+info:
+  title: mistral/timeseries
+  version: 1.15.0
+  description: |
+    *mistral* is a very specialized database powered by *worldiety* which supports the storage and retrieval of time based sensor metrics for devices. It scales quite well for billions of values on a single node.
+
+paths:
+  '/api/v1/devices':
+    get:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - overview
+      summary: List all available devices.
+      description: This endpoint returns all available devices. If a device is available, it just means that someone tried to put data to it, however a device without metrics is possible.
+      responses:
+        '200':
+          description: A json array of uuids in string form.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+        '403':
+          description: 'Invalid bearer token'
+
+        '500':
+          description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
+
+  '/api/v1/devices/{deviceId}/metrics':
+    get:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - overview
+      summary: Lists all available metrics.
+      description: A device has metrics. If a metric is empty, it will be discarded automatically after a flush. So writing 0 entries to a metric may cause that it appears here, but after a flush, it will be discarded. The technical reason for this is, that the metric is created in memory and holds an in-memory *write-ahead-log* which is applied in-order when flushing.
+      parameters:
+        - name: deviceId
+          in: path
+          description: 'Id of a device.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Status represents the current setup status.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+
+        '500':
+          description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
+
+
+
+  '/healthz':
+    get:
+      tags:
+        - status
+      summary: Shows some health metrics about this service.
+      description: It follows more or less the https://tools.ietf.org/id/draft-inadarei-api-health-check-01.html draft.
+
+      responses:
+        '200':
+          description: Status represents the current setup status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: e.g. pass or fail or warn.
+                  version:
+                    type: string
+                    description: the vcs commit hash.
+                  releaseID:
+                    type: string
+                    description: a semantic version like v0.0.0.
+                  description:
+                    type: string
+                    description: some text about the service.
+
+
+
+        '500':
+          description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
+
+
+  '/api/v1/timeseries':
+    delete:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - time series
+      summary: delete time series data.
+      description: |
+        This endpoint provides the possibility to remove an entire range of time series data for a specific device and metric.
+
+        Note, that a *flush* will apply and merge all captured changes for all metrics of a device. It will compact and shard the data and write it atomically into the servers filesystem. Afterwards, the device index is reloaded and the data can be read back.
+      responses:
+        '200':
+          description: 'No further content. This is always returned, if data may potentionally will be deleted.'
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+
+        '500':
+          description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
+
+      parameters:
+        - name: 'X-Flush'
+          in: header
+          description: 'force flush, blocks and makes changes immediately visible. This hurts performance seriously.'
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: device
+          in: query
+          description: 'Id of a device.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: metric
+          in: query
+          description: 'Id of a metric.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: interval
+          in: query
+          description: |
+            Range is a string representation of a range. ( or ] can be used to indicate inclusive and exclusive intervals.
+            ### Format specification:
+              < [|( > < min >, < max > < ]|) > @ < IANA time zone name >
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "[2038-01-19 03:14:07,2038-01-19 03:14:07]@Europe/Berlin"
+
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - time series
+      summary: access to the actual time series data.
+      description: |
+        This endpoint is used to query subsets of all available devices and metrics. Because the possible amount of query
+        combination is endless, a modelling with json is neither performant nor very clear or expressive. Therefore, queries
+        can be created using a subset of the go language itself, which is not compiled but interpreted at runtime.
+
+        ## example queries
+        - return all data for an entire metric for a single device:<br/>
+        <code>find(&#96;cbfcffd0-c7c1-48b1-8ad1-c43625e85f6a&#96;,&#96;262b60c5-671a-4b5d-8667-157d078d5cff&#96;)</code>
+        - return all data within a time range:<br/>
+        <code>find(&#96;cbfcffd0-c7c1-48b1-8ad1-c43625e85f6a&#96;,&#96;262b60c5-671a-4b5d-8667-157d078d5cff&#96;,&#96;[2017-01-01 00:00:00, 2017-12-30 23:59:00]@Europe/Berlin&#96;)</code>
+        - request data within a time range and group by months:<br/>
+        <code>byMonth(find(&#96;cbfcffd0-c7c1-48b1-8ad1-c43625e85f6a&#96;,&#96;262b60c5-671a-4b5d-8667-157d078d5cff&#96;,&#96;[2017-01-01 00:00:00, 2017-12-30 23:59:00]@Europe/Berlin&#96;),0,&#96;Europe/Berlin&#96;)</code>
+        - request data within a time range and group by months and take the average for each month:<br/>
+        <code>innerAvgY(byMonth(find(&#96;cbfcffd0-c7c1-48b1-8ad1-c43625e85f6a&#96;,&#96;262b60c5-671a-4b5d-8667-157d078d5cff&#96;,&#96;[2017-01-01 00:00:00, 2017-12-30 23:59:00]@Europe/Berlin&#96;),0,&#96;Europe/Berlin&#96;))</code>
+        - take all available data and downsample it (looks nice in SVG):<br/>
+        <code>m4(find(&#96;cbfcffd0-c7c1-48b1-8ad1-c43625e85f6a&#96;,&#96;262b60c5-671a-4b5d-8667-157d078d5cff&#96;),100)</code>
+        - take two devices with all available data and downsample it (looks nice in SVG)<br/>
+        <code>a:=m4(find(&#96;cbfcffd0-c7c1-48b1-8ad1-c43625e85f6a&#96;,&#96;262b60c5-671a-4b5d-8667-157d078d5cff&#96;),10)\nb:=m4(find(&#96;07358c56-6975-4bd2-baa2-a0a4e8658d90&#96;,&#96;262b60c5-671a-4b5d-8667-157d078d5cff&#96;),10);\ngroups(a,b)</code>
+        - get the min/max for metric of a device:<br/>
+        <code>min, max, exists := minMax(&#96;cbfcffd0-c7c1-48b1-8ad1-c43625e85f6a&#96;,&#96;262b60c5-671a-4b5d-8667-157d078d5cff&#96;);\n[]int64{min,max}</code>
+        - poke the first point of a series:<br/>
+        <code>first(find(&#96;01cc2c7a-f3c7-4949-a7e2-d1a461a37f5d&#96;,&#96;17f8edd1-3d44-450b-9207-f9d33dcf7556&#96;,&#96;[2018-12-31 23:00:00,2019-02-28 22:59:00)@Europe/Berlin&#96;))</code>
+        - find all metrics and their min/max ranges for a given list of devices:<br/>
+        <code>metricsWithData(&#96;01cc2c7a-f3c7-4949-a7e2-d1a461a37f5d,a62a6dc0-f61f-4b35-9ad4-a7c2dbbc7be7&#96;)</code>
+        - return the coverage (min and max) for a specific device-metric combination:<br/>
+         <code>coverage(&#96;01cc2c7a-f3c7-4949-a7e2-d1a461a37f5d&#96;,&#96;17f8edd1-3d44-450b-9207-f9d33dcf7556&#96;)</code>
+        - find the scale for a metric:<br/>
+        <code>scaleOf(&#96;67ec02f1-b864-4182-85ba-ed966be54070&#96;)</code>
+        - scale x and y values in-place for an entire point series:<br/>
+        <code>scalePoints(find(&#96;cbfcffd0-c7c1-48b1-8ad1-c43625e85f6a&#96;,&#96;262b60c5-671a-4b5d-8667-157d078d5cff&#96;),1000,1000)</code>
+        - limit by y min/max-y-values inclusively in-place for an entire point series:<br/>
+        <code>limit(find(&#96;cbfcffd0-c7c1-48b1-8ad1-c43625e85f6a&#96;,&#96;262b60c5-671a-4b5d-8667-157d078d5cff&#96;),10,100)</code>
+        
+
+        ## Supported query functions
+        - sourcing:
+          - find(device uuid as string, metric uuid as string) -> Points
+          - find(device uuid as string, metric uuid as string, range as string) -> Points
+          - findMany(devices []uuids as comma separated strings, device uuid as string, range as string) -> []Points
+        - downsampling:
+          - m4(Points, width as int) -> Points
+        - group over:
+          - byDay(Points, shift as int, timezone as string) -> []Points
+          - byMonth(Points, shift as int, timezone as string) -> []Points
+          - byYear(Points, shift as int, timezone as string) -> []Points
+        - group over using the according raster for X (timestamps):
+          - byDayRaster(Points, shift as int, timezone as string) -> []Points
+          - byMonthRaster(Points, shift as int, timezone as string) -> []Points
+          - byYearRaster(Points, shift as int, timezone as string) -> []Points
+        - aggregate:
+          - sumY(Points) -> Optional<int>
+          - avgY(Points) -> Optional<int>
+          - minY(Points) -> Optional<int>
+          - maxY(Points) -> Optional<int>
+          - count(Points) -> Optional<int>
+        - aggregate inner:
+          - innerSumY([]Points) -> Points
+          - innerAvgY([]Points) -> Points
+          - innerMinY([]Points) -> Points
+          - innerMaxY([]Points) -> Points
+          - innerCount([]Points) -> Points
+        - aggregate outer group by x:
+          - outerSumY([]Points) -> Points
+          - outerAvgY([]Points) -> Points
+          - outerMinY([]Points) -> Points
+          - outerMaxY([]Points) -> Points
+          - outerCount([]Points) -> Points
+        - util:
+          - groups(...Points)[]Points
+          - minMax(device uuid as string, metric uuid as string) -> min, max, exists
+          - scaleOf(device uuid as string) -> int
+          - scalePoints(Points, x as int, y as int) -> Points // points is modified in-place
+          - raster(Points, divisor as int) -> Points // points is modified in-place
+          - limit(Points, y-min as int, y-max as int) -> Points // points is modified in-place
+        - poke:
+          - first(Points) -> Optional<Point>
+          - last(Points) -> Optional<Point>
+        - metric ranges
+          - metricsWithData(devices []uuids as comma separated strings) -> []TimeSeriesDataRange
+          - coverage(device uuid as string, metric uuid as string) -> []TimeSeriesDataRange
+
+      parameters:
+        - name: X-Plot-Title
+          in: header
+          description: The title in the plot image.
+          required: false
+          schema:
+            type: string
+        - name: X-Plot-X-Caption
+          in: header
+          description: The caption of the x-axis.
+          required: false
+          schema:
+            type: string
+        - name: X-Plot-Y-Caption
+          in: header
+          description: The caption of the y-axis.
+          required: false
+          schema:
+            type: string
+        - name: X-Plot-Name-0
+          in: header
+          description: The legend title of the first plot data.
+          required: false
+          schema:
+            type: string
+        - name: X-Plot-Name-1
+          in: header
+          description: The legend title of the second plot data.
+          required: false
+          schema:
+            type: string
+        - name: X-Plot-Width
+          in: header
+          description: The width of the svg image in millimeter.
+          required: false
+          schema:
+            type: integer
+        - name: X-Plot-Height
+          in: header
+          description: The height of the svg image in millimeter.
+          required: false
+          schema:
+            type: integer
+        - name: X-Plot-X-Scale
+          in: header
+          description: The pre-scale of the x-axis values before drawing.
+          required: false
+          schema:
+            type: number
+        - name: X-Plot-Y-Scale
+          in: header
+          description: The pre-scale of the y-axis values before drawing.
+          required: false
+          schema:
+            type: number
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: A query string, as defined in the documentation above.
+
+
+      responses:
+        '200':
+          description: |
+            Depending on your query, it may return arbitrary format. However, the most common types are:
+             - a json object, with x and y metrics each in their own array (Points)
+             - a json array of json objects in the format as explained above ([]Points)
+             - a rendered SVG image containing the resulting metrics
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      x:
+                        type: array
+                        items:
+                          type: integer
+                          format: int64
+                      y:
+                        type: array
+                        items:
+                          type: integer
+                          format: int64
+                  - type: array
+                    items:
+                      type: object
+                      properties:
+                        x:
+                          type: array
+                          items:
+                            type: integer
+                            format: int64
+                        y:
+                          type: array
+                          items:
+                            type: integer
+                            format: int64
+
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+
+        '500':
+          description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
+
+  '/api/v1/devices/{deviceId}/metrics/{metricId}':
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - write
+      summary: Inserts, appends or updates metric data.
+      description: |
+        A post will create a device, if required. Given time series data is either appended, inserted or already existing
+        values are updated. The data is only available after a flush, which may usually only happen once an hour. However, for
+        testing purposes or if you are going to insert huge amounts of data (gigabytes), you can flush
+        the data explicitly.
+
+        **Warning**: you should never put a single value for all of your devices and call flush for each.
+        This will hurt your servers performance seriously! Rule of thumb: if you are not sure, do not use the flush parameter.
+
+        The X axis of the dataset is stored as a strict monotonic arbitrary integer.
+        However, group functions (like group by day) interpret the value
+        as a Unix timestamp in seconds.
+
+        Note, that a *flush* will apply and merge all captured changes for all metrics of a device. It will compact and shard the data and write it atomically into the servers filesystem. Afterwards, the device index is reloaded and the data can be read back.
+
+
+      parameters:
+        - name: deviceId
+          in: path
+          description: 'Id of a device.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: metricId
+          in: path
+          description: 'Id of a metric.'
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: 'X-Flush'
+          in: header
+          description: 'force flush, blocks and makes changes immediately visible. This hurts performance seriously.'
+          required: false
+          schema:
+            type: boolean
+            default: false
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                x:
+                  description: Actually an arbitrary strict monotonic int, but
+                    should be a Unix timestamp in seconds so that group functions
+                    can aggegrate properly.
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                y:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+
+      responses:
+        '200':
+          description: Status represents the current setup status.
+        '403':
+          description: 'Invalid bearer token'
+        '400':
+          description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+
+        '500':
+          description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
+
+
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
