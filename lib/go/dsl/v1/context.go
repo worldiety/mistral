@@ -38,6 +38,10 @@ func (e httpError) HTTPError() bool {
 }
 
 func (e httpError) Error() string {
+	if e.cause != nil {
+		return fmt.Sprintf("%d: %s: %v", e.status, e.msg, e.cause)
+	}
+
 	return e.msg
 }
 

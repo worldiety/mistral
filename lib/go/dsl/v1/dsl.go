@@ -278,7 +278,12 @@ func Timezone(ctx context.Context) *time.Location {
 }
 
 // Time returns a helper instance located into the given Timezone as resolved by Timezone.
+// If ctx is nil, a UTC zoned Times is returned.
 func Time(ctx context.Context) Times {
+	if ctx == nil {
+		return Times{tz: time.UTC}
+	}
+
 	tz := Timezone(ctx)
 	return Times{tz: tz}
 }
