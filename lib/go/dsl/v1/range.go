@@ -5,6 +5,7 @@ package miel
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -32,6 +33,11 @@ type Range string
 // UnmarshalJSON validates the range during unmarshalling.
 func (r *Range) UnmarshalJSON(bytes []byte) error {
 	s := string(bytes)
+	s, err := strconv.Unquote(s)
+	if err != nil {
+		return fmt.Errorf("cannot unquote range: %w", err)
+	}
+
 	if _, _, err := Range(s).Interval(); err != nil {
 		return fmt.Errorf("invalid range '%s': %w", s, err)
 	}

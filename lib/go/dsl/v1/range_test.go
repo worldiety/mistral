@@ -3,7 +3,32 @@
 
 package miel
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
+
+func TestUnmarshal(t *testing.T) {
+	type obj struct {
+		Range Range `json:"range"`
+	}
+
+	const r = "[2021-01-01 00:00:00,2038-01-19 03:14:07]@Europe/Berlin"
+	buf, err := json.Marshal(obj{Range: r})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var o obj
+	if err := json.Unmarshal(buf, &o); err != nil {
+		t.Fatal(err)
+	}
+
+	if x := o.Range; x != r {
+		t.Fatal(x)
+	}
+
+}
 
 func TestRange_Interval(t *testing.T) {
 	tests := []struct {
