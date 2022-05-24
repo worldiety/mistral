@@ -1,0 +1,15 @@
+type: object
+properties:
+  status:
+    type: string
+    enum: [pass, warn, fail]
+    description: e.g. pass or fail or warn.
+  version:
+    type: string
+    description: the vcs (git) commit hash.
+  releaseID:
+    type: string
+    description: a semantic version like v1.2.3.
+  description:
+    type: string
+    description: some details about the service.

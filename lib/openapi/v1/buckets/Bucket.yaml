@@ -1,0 +1,42 @@
+type: object
+description: |
+  Bucket describes a namespace for stored metric time series data. 
+  A bucket usually represents a physical device like a wind turbine which 
+  has an immutable physical location. Other meanings may include customer accounts 
+  for financial data.
+required:
+  - id
+  - type
+  - name
+  - description
+  - timezone
+properties:
+  id:
+    $ref: '../uuid/UUID.yaml'
+  name:
+    type: string
+    description: the default name to display.
+  description:
+    type: string
+    description: the default description about this bucket.
+  type:
+    $ref: './BucketType.yaml'
+  timezone:
+    $ref: '../time/Timezone.yaml'
+  sources:
+    deprecated: true
+    type: object
+    properties:
+      type:
+        type: string
+        description: Type is an arbitrary id or name of to categorize the source.
+      fields:
+        type: object
+        description: arbitrary map of key/values.
+  xattr:
+    deprecated: true
+    type: object
+    description: arbitrary optional map of any kind of attributes.
+
+  translations:
+    $ref: '../translation/Translations.yaml'

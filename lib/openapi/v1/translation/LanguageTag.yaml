@@ -1,0 +1,4 @@
+type: string
+format: RFC5646
+description: A LanguageTag identifies a language or dialect. See also https://datatracker.ietf.org/doc/html/rfc5646.
+example: sr-Latn-RS

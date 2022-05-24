@@ -1,0 +1,6 @@
+description: |
+  Invalid bearer token. Consult your administrator or service provider to get the latest configured API token.
+content:
+  application/problem+json:
+    schema:
+      $ref: ProblemDetails.yaml

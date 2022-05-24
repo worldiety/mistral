@@ -1,0 +1,7 @@
+description: |
+  Indicates a bad request, which is caused by performing an invalid request, like missing or wrong formatted parameter.
+  Inspect the returned ProblemDetails carefully to get some insight.
+content:
+  application/problem+json:
+    schema:
+      $ref: ProblemDetails.yaml

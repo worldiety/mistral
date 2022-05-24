@@ -1,0 +1,84 @@
+buckets:
+  get:
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - buckets
+
+    summary: Returns the meta data for all available buckets.
+    description: This endpoint returns the entire set of all available devices (or time series buckets in general). This just contains the meta data.
+    responses:
+      '200':
+        description: successful operation
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: 'Bucket.yaml'
+
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'
+
+buckets-{id}:
+  get:
+    summary: Returns the meta data for a single bucket or device.
+    description: A bucket always has an attached set of meta data, like a name or information about the origin from which it has been imported.
+
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - buckets
+    parameters:
+      - name: id
+        description: The bucket identifier.
+        in: path
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+    responses:
+      '200':
+        description: successful operation
+        content:
+          application/json:
+            schema:
+              $ref: 'Bucket.yaml'
+
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'
+
+
+  delete:
+    summary: Returns the meta data for a single bucket or device.
+    description: A bucket always has an attached set of meta data, like a name or information about the origin from which it has been imported.
+
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - buckets
+    parameters:
+      - name: id
+        description: The bucket identifier.
+        in: path
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+    responses:
+      '202':
+        $ref: '../errors/C202.yaml'
+      '204':
+        $ref: '../errors/C204.yaml'
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'

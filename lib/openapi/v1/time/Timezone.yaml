@@ -1,0 +1,4 @@
+type: string
+format: timezone
+description: An IANA time zone identifier like Europe/Berlin.
+example: Europe/Berlin

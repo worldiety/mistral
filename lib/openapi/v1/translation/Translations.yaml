@@ -1,0 +1,26 @@
+type: object
+description: |
+  Translations holds text for arbitrary nested static field values. Root keys are in the RFC 5646 format.
+  Structure (fields and nesting) must match the translatable values of the original resource.
+
+example:
+  en:
+    device: my name
+    address:
+      tags:
+        - red
+        - Large
+
+  de_AT:
+    device: Gerät
+    address:
+      tags:
+        - Rot
+        - Groß
+
+  fr:
+    device: appareil
+    address:
+      tags:
+        - rouge
+        - grande

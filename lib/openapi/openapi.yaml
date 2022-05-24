@@ -1,0 +1,30 @@
+openapi: 3.0.1
+info:
+  title: worldiety mistral
+  version: 1.20.0
+  description: |
+    *mistral* is a very specialized database powered by *worldiety* which supports the storage and retrieval of time based sensor metrics for devices. It scales quite well for billions of values on a single node.
+
+servers:
+  - url: "https://mistral.worldiety.net"
+
+tags:
+  - name: status
+    description: Health information about the service
+  - name: buckets
+    description: manage time series data in buckets
+
+paths:
+
+  #########################################################
+  # Status endpoint
+  #########################################################
+
+  /healthz:
+    $ref: './v1/status/paths.yaml#/healthz'
+
+  /api/v1/buckets:
+    $ref: './v1/buckets/paths.yaml#/buckets'
+
+  /api/v1/buckets/{id}:
+    $ref: './v1/buckets/paths.yaml#/buckets-{id}'

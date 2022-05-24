@@ -1,0 +1,16 @@
+type: object
+required:
+  - name
+  - reason
+
+example:
+  name: .address.firstname
+  reason: "firstname must not be empty."
+properties:
+  name:
+    type: string
+    format: jq
+    description: The jq or javascript compatible field selector.
+  reason:
+    type: string
+    description: Reason is the localized message to handout to the end-user.

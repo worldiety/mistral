@@ -1,0 +1,2 @@
+description: |
+  Indicates that the request has been accepted for processing, but the processing has not been completed. Indeed, processing may not have started yet.

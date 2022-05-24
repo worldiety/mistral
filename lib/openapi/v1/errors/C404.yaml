@@ -1,0 +1,6 @@
+description: |
+  The requested resource has not been found.
+content:
+  application/problem+json:
+    schema:
+      $ref: ProblemDetails.yaml

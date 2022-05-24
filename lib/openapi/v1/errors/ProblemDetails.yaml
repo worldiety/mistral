@@ -1,0 +1,62 @@
+type: object
+description: |
+  A ProblemDetails type describes a problem with field selector extensions using
+  rfc7807 - see also https://datatracker.ietf.org/doc/html/rfc7807.
+example:
+  type: "ora://validation-error"
+  title: Invalid value.
+  status: 400
+  detail: Your firstname must not be empty.
+  instance: "trace://550e8400-e29b-11d4-a716-446655440000"
+  invalid-params:
+    - name: .address.firstname
+      reason: "Your firstname must not be empty."
+
+required:
+  - type
+  - status
+  - instance
+
+properties:
+  type:
+    type: string
+    format: uri
+    description: |
+      Consumers MUST use the 'type' string as the primary identifier for
+      the problem type. This must not be a URL but may also be a URI.
+  title:
+    type: string
+    default: ""
+    description: |
+      A short, human-readable summary of the problem
+      type.  It SHOULD NOT change from occurrence to occurrence of the
+      problem, except for purposes of localization.
+
+  status:
+    type: number
+    format: int32
+    description: The HTTP status code.
+
+  detail:
+    type: string
+    default: ""
+    description: |
+      A human-readable explanation specific to this
+      occurrence of the problem.
+
+  instance:
+    type: string
+    format: uri
+    description: |
+      A URI reference that identifies the specific
+      occurrence of the problem. It contains a random
+      uuid to identify each problem individually and which
+      can be used to trace within the log files. Intentionally,
+      this cannot be dereferenced to not leak implementation details
+      and therefore increase the attack surface.
+
+
+  invalid-params:
+    type: array
+    items:
+      $ref: './InvalidParam.yaml'
