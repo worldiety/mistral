@@ -1,0 +1,26 @@
+plugins {
+    id "org.openapi.generator" version "5.2.0"
+}
+
+// see also https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/markdown.md
+task buildMarkdown(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = "markdown"
+    inputSpec = "$rootDir/openapi.yaml".toString()
+    outputDir = "$buildDir/doc".toString()
+}
+
+// see also https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/asciidoc.md
+task buildAsciidoc(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = "asciidoc"
+    inputSpec = "$rootDir/openapi.yaml"
+    additionalProperties = [
+            "useMethodAndPath": true
+    ]
+    outputDir = "$buildDir/doc".toString()
+    /* configOptions = [
+
+     ]*/
+}
+
+task doc(dependsOn: ['buildMarkdown', 'buildAsciidoc']) {
+}
