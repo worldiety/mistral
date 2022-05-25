@@ -5,8 +5,15 @@ info:
   description: |
     *mistral* is a very specialized database powered by *worldiety* which supports the storage and retrieval of time based sensor metrics for devices. It scales quite well for billions of values on a single node.
 
+  license:
+    name: worldiety Enterprise Edition (EE) Lizenz (die "EE Lizenz")
+    url: https://worldiety.github.io/mistral/LICENSE
 servers:
   - url: "https://mistral.worldiety.net"
+
+x-logo:
+  url: 'https://worldiety.github.io/mistral/wdy-logo.svg'
+  altText: 'worldiety logo'
 
 tags:
   - name: status
@@ -28,3 +35,9 @@ paths:
 
   /api/v1/buckets/{id}:
     $ref: './v1/buckets/paths.yaml#/buckets-{id}'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer

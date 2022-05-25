@@ -1,6 +1,7 @@
 healthz:
   # GET getStatus
   get:
+    operationId: GetStatus
     tags:
       - status
     summary: Shows some health metrics about this service.

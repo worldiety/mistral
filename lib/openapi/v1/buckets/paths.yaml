@@ -1,5 +1,6 @@
 buckets:
   get:
+    operationId: ListBuckets
     security:
       - bearerAuth: [ ]
     tags:
@@ -26,6 +27,7 @@ buckets:
 
 buckets-{id}:
   get:
+    operationId: GetBucket
     summary: Returns the meta data for a single bucket or device.
     description: A bucket always has an attached set of meta data, like a name or information about the origin from which it has been imported.
 
@@ -57,6 +59,7 @@ buckets-{id}:
 
 
   delete:
+    operationId: DeleteBucket
     summary: Returns the meta data for a single bucket or device.
     description: A bucket always has an attached set of meta data, like a name or information about the origin from which it has been imported.
 
@@ -72,6 +75,42 @@ buckets-{id}:
         schema:
           $ref: '../uuid/UUID.yaml'
     responses:
+      '202':
+        $ref: '../errors/C202.yaml'
+      '204':
+        $ref: '../errors/C204.yaml'
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'
+
+
+  put:
+    operationId: SaveBucket
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - buckets
+    summary: Creates or updates the meta data for the bucket.
+    description: A device may have additional meta data, like a name or information about the origin from which it has been imported.
+    parameters:
+      - name: id
+        in: path
+        description: The bucket identifier.
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: 'Bucket.yaml'
+    responses:
+      '201':
+        $ref: '../errors/C201.yaml'
       '202':
         $ref: '../errors/C202.yaml'
       '204':
