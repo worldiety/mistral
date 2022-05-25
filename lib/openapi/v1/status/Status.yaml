@@ -4,12 +4,16 @@ properties:
     type: string
     enum: [pass, warn, fail]
     description: e.g. pass or fail or warn.
+    nullable: false
   version:
     type: string
     description: the vcs (git) commit hash.
+    nullable: false
   releaseID:
     type: string
     description: a semantic version like v1.2.3.
+    nullable: false
   description:
     type: string
     description: some details about the service.
+    nullable: false

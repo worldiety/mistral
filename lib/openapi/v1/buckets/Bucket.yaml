@@ -8,22 +8,27 @@ required:
   - id
   - type
   - name
-  - description
   - timezone
 properties:
   id:
     $ref: '../uuid/UUID.yaml'
+    nullable: false
   name:
     type: string
     description: the default name to display.
+    nullable: false
   description:
     type: string
     description: the default description about this bucket.
+    nullable: false
   type:
+    nullable: false
     $ref: './BucketType.yaml'
   timezone:
+    nullable: false
     $ref: '../time/Timezone.yaml'
   sources:
+    nullable: false
     deprecated: true
     type: object
     properties:
@@ -34,7 +39,7 @@ properties:
         type: object
         description: arbitrary map of key/values.
   xattr:
-    deprecated: true
+    nullable: false
     type: object
     description: arbitrary optional map of any kind of attributes.
 

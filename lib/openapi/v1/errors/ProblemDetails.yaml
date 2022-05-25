@@ -12,21 +12,19 @@ example:
     - name: .address.firstname
       reason: "Your firstname must not be empty."
 
-required:
-  - type
-  - status
-  - instance
 
 properties:
   type:
     type: string
     format: uri
+    nullable: false
     description: |
       Consumers MUST use the 'type' string as the primary identifier for
       the problem type. This must not be a URL but may also be a URI.
   title:
     type: string
     default: ""
+    nullable: false
     description: |
       A short, human-readable summary of the problem
       type.  It SHOULD NOT change from occurrence to occurrence of the
@@ -34,11 +32,13 @@ properties:
 
   status:
     type: number
+    nullable: false
     format: int32
     description: The HTTP status code.
 
   detail:
     type: string
+    nullable: false
     default: ""
     description: |
       A human-readable explanation specific to this
@@ -46,6 +46,7 @@ properties:
 
   instance:
     type: string
+    nullable: false
     format: uri
     description: |
       A URI reference that identifies the specific
@@ -58,5 +59,6 @@ properties:
 
   invalid-params:
     type: array
+    nullable: false
     items:
       $ref: './InvalidParam.yaml'

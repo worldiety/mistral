@@ -1,7 +1,4 @@
 type: object
-required:
-  - name
-  - reason
 
 example:
   name: .address.firstname
@@ -11,6 +8,8 @@ properties:
     type: string
     format: jq
     description: The jq or javascript compatible field selector.
+    nullable: false
   reason:
     type: string
     description: Reason is the localized message to handout to the end-user.
+    nullable: false
