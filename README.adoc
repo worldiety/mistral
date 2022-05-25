@@ -7,6 +7,11 @@ mistral software development kit including examples and client bindings for diff
 MiEL is the Mistral Expression Language and defined as a Go-like module in link:lib/go/dsl[dsl-module].
 For your convenience, there is a link:tutorial/miel[MiEL starter tutorial].
 
+== OAS Specification
+
+You can find the documentation in link:lib/openapi/README.adoc[the openapi folder].
+See also the rendered https://worldiety.github.io/mistral[API documentation].
+
 == License
 
 All example source codes, if not otherwise noted, are licensed under a BSD 2-Clause License.

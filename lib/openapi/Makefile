@@ -9,5 +9,6 @@ lint:
 serve:
 	npx @redocly/openapi-cli preview-docs openapi.yaml
 
+build: lint doc
 
-.DEFAULT_GOAL := lint doc
+.DEFAULT_GOAL := build

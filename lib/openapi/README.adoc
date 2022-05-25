@@ -1,0 +1,4 @@
+== mistral OpenAPI specification
+
+Here you can find the entire latest mistral REST API specification.
+See also the pre-rendered https://worldiety.github.io/mistral[API documentation].

@@ -8,12 +8,18 @@ info:
   license:
     name: worldiety Enterprise Edition (EE) Lizenz (die "EE Lizenz")
     url: https://worldiety.github.io/mistral/LICENSE
+
+
+  x-logo:
+    url: 'https://worldiety.github.io/mistral/wdy-logo.svg'
+    altText: 'worldiety logo'
+    href: https://www.worldiety.de/produkte/mistral
+
+
 servers:
   - url: "https://mistral.worldiety.net"
 
-x-logo:
-  url: 'https://worldiety.github.io/mistral/wdy-logo.svg'
-  altText: 'worldiety logo'
+
 
 tags:
   - name: status
