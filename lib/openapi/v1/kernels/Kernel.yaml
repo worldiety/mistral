@@ -1,0 +1,32 @@
+type: object
+description: ProcInfo contains the full set of readable meta data for a proc.
+required:
+  - id
+  - name
+  - description
+  - tags
+  - src
+properties:
+  id:
+    $ref: '../uuid/UUID.yaml'
+    description: The unique ID of the bucket group.
+    nullable: false
+  src:
+    $ref: './MiEl.yaml'
+  tags:
+    type: array
+    description: An arbitrary set of strings used as tags, e.g. indicating specific topics or templates.
+    example: [ "apexcharts", "daily" ]
+    items:
+      type: string
+  name:
+    type: string
+    description: A short but arbitrary debug name in the default language for an end-user.
+      Use the translations field for language specific values.
+    example: daily avg
+  description:
+    type: string
+    description: A longer and more descriptive text in the default language for an end-user about what the expression is about. Use the translations field for language specific values.
+    example: a simple daily average calculation.
+  translations:
+    $ref: '../translation/Translations.yaml'

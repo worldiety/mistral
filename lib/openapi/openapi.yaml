@@ -23,9 +23,50 @@ servers:
 
 tags:
   - name: status
-    description: Health information about the service
+    description: |
+      This resource provides basic health information about the service.
+      It is conventionally provided to support a hosting within complex infrastructures 
+      like kubernetes. A successful response does not mean that everything is actually
+      fine. It just executes some basic checks and inspections to prove that in general
+      the service should be able to process requests.
+
   - name: buckets
-    description: manage time series data in buckets
+    description: |
+      Resources of _buckets_ provide access to both, meta data and actual time series data.
+      A bucket represents usually a device like a wind generator but may also be used
+      for other time-based data required e.g. for accounting.
+      
+      Advanced querying and aggregation is only possible by using the computational kernel API.
+  - name: bucketgroups
+    description: |
+      Resources of _bucketgroups_ represent groups of buckets (or devices), often known as portfolios.
+      This resource is purely virtual and can be used to simplify the development and 
+      usage of computational kernels. 
+      
+      For example, it may make sense to create a group
+      representing a clients portfolio of wind generators he owns. Then, a compute kernel
+      may just take the group identifier to load all contained bucket identifiers itself.
+
+  - name: kernels
+    description: |
+      Resources of _kernels_ represent the compute kernels written in the MiEl language - 
+      a subset respective dialect of the Go programming language. 
+      You should avoid the creation or modification of kernels from end-users, to
+      protect your service against DoS-like attacks. Even though the execution is sandboxed
+      and that there is no standard library available, a kernel can still consume an unreasonable
+      amount of CPU or memory resources.
+      
+      Mistral distributes and schedules these kernels as execution is requested.
+      A kernel usually assembles a pipeline of pre-compiled fixed-function aggregation
+      algorithms and transforms the result into an arbitrary (json) structure.
+      This avoid to transfer and serialize large sets of data through the network, which
+      otherwise would degrade system performance multiple orders of magnitude.
+      Thus, always keep in mind to bring the computation to the data (your MiEL compute kernel)
+      instead of just serializing the data over the wire into your middleware.
+      
+      Mistral also provides a bunch of build-in and ready-to-use kernels, which cannot be modified and
+      may be optimized and updated in future releases. These kernels are especially useful
+      for basic inspection and data analysis tasks.
 
 paths:
 
@@ -42,8 +83,31 @@ paths:
   /api/v1/buckets/{id}:
     $ref: './v1/buckets/paths.yaml#/buckets-{id}'
 
+  /api/v1/bucketgroups:
+    $ref: './v1/bucketgroups/paths.yaml#/bucketgroups'
+
+  /api/v1/bucketgroups/{id}:
+    $ref: './v1/bucketgroups/paths.yaml#/bucketgroups-{id}'
+
+  /api/v1/kernels:
+    $ref: './v1/kernels/paths.yaml#/kernels'
+
+
+  /api/v1/kernels/{id}:
+    $ref: './v1/kernels/paths.yaml#/kernels-{id}'
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
+      description: |
+        Securitywise, mistral does not provide its own authentication or authorization
+        infrastructure. The intended modus operandi locates mistral into a private
+        network, with a custom gateway API or middleware in front of it. 
+        There is no ownership of buckets, time series data or users in general, which
+        also means, that this kind of authorization must be guaranteed by the according 
+        upstream service. Therefore, there is only a single basic level of security, based
+        on a secret bearer token, which must be exchanged through an external secure channel.
+        Usually, you want to exchange and deploy these secrets at least through
+        dynamic environment variables within your deployment infrastructure.

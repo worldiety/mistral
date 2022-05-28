@@ -1,0 +1,31 @@
+type: object
+description: A BucketGroup is a collection of buckets with an arbitrary meaning.
+required:
+  - id
+  - name
+  - description
+  - type
+  - buckets
+properties:
+  id:
+    $ref: '../uuid/UUID.yaml'
+    description: The unique ID of the bucket group.
+    nullable: false
+  name:
+    type: string
+    description: the default name to display.
+    nullable: false
+  description:
+    type: string
+    description: the default description about this bucket.
+    nullable: false
+  type:
+    nullable: false
+    $ref: './BucketGroupType.yaml'
+  buckets:
+    type: array
+    nullable: false
+    items:
+      $ref: '../uuid/UUID.yaml'
+  translations:
+    $ref: '../translation/Translations.yaml'

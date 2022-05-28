@@ -1,22 +1,21 @@
-buckets:
+bucketgroups:
   get:
-    operationId: ListBuckets
+    operationId: ListBucketGroups
     security:
       - bearerAuth: [ ]
     tags:
-      - buckets
-
-    summary: Returns the meta data for all available buckets.
-    description: This endpoint returns the entire set of all available devices (or time series buckets in general). This just contains the meta data.
+      - bucketgroups
+    summary: Returns the all available bucket groups.
+    description: This endpoint returns the entire set of all available groups of buckets.
     responses:
       '200':
-        description: successful operation
+        description: Returns the group data.
         content:
           application/json:
             schema:
               type: array
               items:
-                $ref: 'Bucket.yaml'
+                $ref: 'BucketGroup.yaml'
 
       '400':
         $ref: '../errors/C400.yaml'
@@ -25,30 +24,29 @@ buckets:
       '500':
         $ref: '../errors/C500.yaml'
 
-buckets-{id}:
+bucketgroups-{id}:
   get:
-    operationId: GetBucket
-    summary: Returns the meta data for a single bucket or device.
-    description: A bucket always has an attached set of meta data, like a name or information about the origin from which it has been imported.
-
+    operationId: GetBucketGroup
     security:
       - bearerAuth: [ ]
     tags:
-      - buckets
+      - bucketgroups
+    summary: Returns the bucket meta data for the id.
+    description: This endpoint returns the meta data about a single stored bucket group.
     parameters:
       - name: id
-        description: The bucket identifier.
         in: path
+        description: 'ID of the bucket group.'
         required: true
         schema:
           $ref: '../uuid/UUID.yaml'
     responses:
       '200':
-        description: successful operation
+        description: Returns the buckets meta data.
         content:
           application/json:
             schema:
-              $ref: 'Bucket.yaml'
+              $ref: './BucketGroup.yaml'
 
       '400':
         $ref: '../errors/C400.yaml'
@@ -60,25 +58,32 @@ buckets-{id}:
         $ref: '../errors/C500.yaml'
 
 
-  delete:
-    operationId: DeleteBucket
-    summary: Returns the meta data for a single bucket or device.
-    description: |
-      A bucket always has an attached set of meta data, like a name or information about the origin from which it has been imported.
-      Deleting a non-existing bucket returns also a 202 or 204.
 
+  put:
+    operationId: SaveBucketGroup
     security:
       - bearerAuth: [ ]
     tags:
-      - buckets
+      - bucketgroups
+    summary: Creates or updates the denoted bucket group.
+    description: Create or update a bucket group containing reference identifiers to buckets. If the resource does not yet exist, it will be created.
     parameters:
       - name: id
-        description: The bucket identifier.
         in: path
+        description: 'ID of the bucket group.'
         required: true
         schema:
           $ref: '../uuid/UUID.yaml'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './BucketGroup.yaml'
+
     responses:
+      '201':
+        $ref: '../errors/C201.yaml'
       '202':
         $ref: '../errors/C202.yaml'
       '204':
@@ -90,31 +95,27 @@ buckets-{id}:
       '500':
         $ref: '../errors/C500.yaml'
 
-
-  put:
-    operationId: SaveBucket
+  delete:
+    operationId: DeleteBucketGroup
     security:
       - bearerAuth: [ ]
     tags:
-      - buckets
-    summary: Creates or updates the meta data for the bucket.
-    description: A device may have additional meta data, like a name or information about the origin from which it has been imported.
+      - bucketgroups
+    summary: Removes a bucket group.
+    description: |
+      Removes the specified bucket group. All referenced buckets are kept alive.
+      Deleting a non-existing bucket group will also return 202 or 204.
     parameters:
       - name: id
         in: path
-        description: The bucket identifier.
+        description: 'ID of bucket group.'
         required: true
         schema:
           $ref: '../uuid/UUID.yaml'
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: 'Bucket.yaml'
+
+
+
     responses:
-      '201':
-        $ref: '../errors/C201.yaml'
       '202':
         $ref: '../errors/C202.yaml'
       '204':

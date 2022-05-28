@@ -1,22 +1,21 @@
-buckets:
+kernels:
   get:
-    operationId: ListBuckets
+    operationId: ListKernels
     security:
       - bearerAuth: [ ]
     tags:
-      - buckets
-
-    summary: Returns the meta data for all available buckets.
-    description: This endpoint returns the entire set of all available devices (or time series buckets in general). This just contains the meta data.
+      - kernels
+    summary: Returns all compute kernels and their according meta data.
+    description: This endpoint returns the entire set of all available stored procedures.
     responses:
       '200':
-        description: successful operation
+        description: Returns the list of kernels.
         content:
           application/json:
             schema:
               type: array
               items:
-                $ref: 'Bucket.yaml'
+                $ref: './Kernel.yaml'
 
       '400':
         $ref: '../errors/C400.yaml'
@@ -25,30 +24,30 @@ buckets:
       '500':
         $ref: '../errors/C500.yaml'
 
-buckets-{id}:
+kernels-{id}:
   get:
-    operationId: GetBucket
-    summary: Returns the meta data for a single bucket or device.
-    description: A bucket always has an attached set of meta data, like a name or information about the origin from which it has been imported.
-
+    operationId: LoadKernel
     security:
       - bearerAuth: [ ]
     tags:
-      - buckets
+      - kernels
+    summary: Returns the meta data for a specific proc.
+    description: This endpoint returns the meta data about a single stored procedure.
     parameters:
       - name: id
-        description: The bucket identifier.
         in: path
+        description: 'ID of the compute kernel stored procedure.'
         required: true
         schema:
           $ref: '../uuid/UUID.yaml'
     responses:
       '200':
-        description: successful operation
+        description: Returns the compute kernel.
         content:
           application/json:
             schema:
-              $ref: 'Bucket.yaml'
+              $ref: './Kernel.yaml'
+
 
       '400':
         $ref: '../errors/C400.yaml'
@@ -59,26 +58,31 @@ buckets-{id}:
       '500':
         $ref: '../errors/C500.yaml'
 
-
-  delete:
-    operationId: DeleteBucket
-    summary: Returns the meta data for a single bucket or device.
-    description: |
-      A bucket always has an attached set of meta data, like a name or information about the origin from which it has been imported.
-      Deleting a non-existing bucket returns also a 202 or 204.
-
+  put:
+    operationId: SaveKernel
     security:
       - bearerAuth: [ ]
     tags:
-      - buckets
+      - kernels
+    summary: Updates the kernel.
+    description: The kernel consists of a few meta data and the actual MiEl compute kernel script. If the resource does not yet exist, it is created.
     parameters:
       - name: id
-        description: The bucket identifier.
         in: path
+        description: 'ID of the kernel respective stored procedure.'
         required: true
         schema:
           $ref: '../uuid/UUID.yaml'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './Kernel.yaml'
+
     responses:
+      '201':
+        $ref: '../errors/C201.yaml'
       '202':
         $ref: '../errors/C202.yaml'
       '204':
@@ -90,31 +94,24 @@ buckets-{id}:
       '500':
         $ref: '../errors/C500.yaml'
 
-
-  put:
-    operationId: SaveBucket
+  delete:
+    operationId: DeleteKernel
     security:
       - bearerAuth: [ ]
     tags:
-      - buckets
-    summary: Creates or updates the meta data for the bucket.
-    description: A device may have additional meta data, like a name or information about the origin from which it has been imported.
+      - kernels
+    summary: Removes the kernel.
+    description: Removes a compute kernel and its meta data. Deleting a non-existing kernel is not an error.
     parameters:
       - name: id
         in: path
-        description: The bucket identifier.
+        description: 'ID of the stored procedure.'
         required: true
         schema:
           $ref: '../uuid/UUID.yaml'
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: 'Bucket.yaml'
+
+
     responses:
-      '201':
-        $ref: '../errors/C201.yaml'
       '202':
         $ref: '../errors/C202.yaml'
       '204':
