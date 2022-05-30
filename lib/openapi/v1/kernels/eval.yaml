@@ -1,0 +1,43 @@
+eval:
+  post:
+    operationId: EvalKernel
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - kernels
+    summary: Evaluates a non-persistent compute kernel.
+    description: Useful to avoid that one-shot scripts must be stored, loaded and deleted. Provides instant validation feedback to the user.
+    parameters:
+      - in: header
+        name: X-TZ
+        schema:
+          $ref: '../time/Timezone.yaml'
+
+      - in: header
+        name: Viewport-Width
+        schema:
+          $ref: '../client/ViewportWidth.yaml'
+
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              params:
+                $ref: './KernelParam.yaml'
+              src:
+                description: src contains the MiEl compute kernel which shall be executed using the given header and kernel parameters.
+                $ref: './MiEl.yaml'
+
+
+    responses:
+      '200':
+        $ref: './KernelResult.yaml'
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'

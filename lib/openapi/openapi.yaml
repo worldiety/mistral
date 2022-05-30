@@ -96,6 +96,12 @@ paths:
   /api/v1/kernels/{id}:
     $ref: './v1/kernels/paths.yaml#/kernels-{id}'
 
+  /api/v1/eval/kernel:
+    $ref: './v1/kernels/eval.yaml#/eval'
+
+  /api/v1/kernels/{id}/run:
+    $ref: './v1/kernels/run.yaml#/run'
+
 components:
   securitySchemes:
     bearerAuth:

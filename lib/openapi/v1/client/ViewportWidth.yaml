@@ -1,0 +1,4 @@
+type: integer
+description: A hint from the client for the current view port width in css pixel.
+example: 320
+default: 512

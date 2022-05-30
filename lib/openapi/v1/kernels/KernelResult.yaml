@@ -1,0 +1,7 @@
+description: |
+  Returned, if the request has been parsed and executed successfully. Indeed, the kernel has returned a reasonable response, which is most likely a JSON object.
+  See also the parameters endpoint to learn more about the request and response type specification of a specific kernel.
+content:
+  application/json:
+    schema:
+      type: object

@@ -1,0 +1,6 @@
+type: object
+description: |
+  In general the KernelParam is an arbitrary json object. 
+  However, it must match properly to exact that struct, which is expected and parsed by a specific compute kernel.
+  See also the parameters endpoint to learn more about the request and response type specification of a specific kernel.
+example: { "bucketID": "550e8400-e29b-11d4-a716-446655440000", "metricID": "550e8400-e29b-11d4-a716-446655440000" }

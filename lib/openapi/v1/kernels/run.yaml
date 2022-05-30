@@ -1,0 +1,44 @@
+run:
+  post:
+    operationId: RunKernel
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - kernels
+    summary: Executes a stored MiEl compute kernel.
+    description: Loads the kernel respective stored procedure by its ID and execute it with the given parameters submitted as a json body. See also
+    parameters:
+      - in: header
+        name: X-TZ
+        schema:
+          $ref: '../time/Timezone.yaml'
+
+      - in: header
+        name: Viewport-Width
+        schema:
+          $ref: '../client/ViewportWidth.yaml'
+
+      - name: id
+        in: path
+        description: 'ID of the compute kernel.'
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './KernelParam.yaml'
+
+
+    responses:
+      '200':
+        $ref: './KernelResult.yaml'
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'

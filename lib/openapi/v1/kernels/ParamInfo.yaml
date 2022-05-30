@@ -1,0 +1,20 @@
+type: object
+description: ParamInfo describes the input and output specification of a MiEL compute kernel.
+  However, this is just a hint from sane programs.
+required:
+  - example
+properties:
+  example:
+    type: object
+    required:
+      - request
+      - response
+    properties:
+      request:
+        type: object
+        description: An arbitrary response example.
+        example: { "bucketID": "550e8400-e29b-11d4-a716-446655440000", "metricID": "550e8400-e29b-11d4-a716-446655440000" }
+      response:
+        type: object
+        description: An arbitrary response example.
+        example: [ { "x": 1, "y": 2 },{ "x": 3,"y": 4 } ]
