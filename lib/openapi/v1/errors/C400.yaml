@@ -1,6 +1,7 @@
 description: |
   Indicates a bad request, which is caused by performing an invalid request, like missing or wrong formatted parameter.
-  Inspect the returned ProblemDetails carefully to get some insight.
+  Inspect the returned ProblemDetails carefully to get some insight. 
+  See also https://datatracker.ietf.org/doc/html/rfc7807.
 content:
   application/problem+json:
     schema:

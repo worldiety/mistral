@@ -1,5 +1,6 @@
 description: |
   Invalid bearer token. Consult your administrator or service provider to get the latest configured API token.
+  See also https://datatracker.ietf.org/doc/html/rfc7807.
 content:
   application/problem+json:
     schema:

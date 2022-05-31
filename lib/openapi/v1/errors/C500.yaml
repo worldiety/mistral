@@ -2,6 +2,7 @@ description: |
   Internal Server Error is usually returned, if something went wrong at the server side. 
   If this problem persists, you should contact the support or your administrator and inspect the log files, to get more insight.
   To help inspection, see the instance field of the ProblemDetails.
+  See also https://datatracker.ietf.org/doc/html/rfc7807.
 content:
   application/problem+json:
     schema:

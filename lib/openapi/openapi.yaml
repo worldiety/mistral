@@ -68,6 +68,15 @@ tags:
       may be optimized and updated in future releases. These kernels are especially useful
       for basic inspection and data analysis tasks.
 
+  - name: timeseries
+    description: |
+      Resources of _timeseries_ allows access to ranges of stored time series data within a specific
+      bucket and metric. 
+      All time series data within a bucket and metric is treated uniquely per time stamp, which should
+      be represented as a Unix timestamp in seconds since Epoch, which is also expected by
+      all [MiEl kernel functions](#tag/kernels).
+      
+
 paths:
 
   #########################################################
@@ -82,6 +91,9 @@ paths:
 
   /api/v1/buckets/{id}:
     $ref: './v1/buckets/paths.yaml#/buckets-{id}'
+
+  /api/v1/buckets/{bucket-id}/timeseries/{metric-id}:
+    $ref: './v1/buckets/timeseries.yaml#/timeseries'
 
   /api/v1/bucketgroups:
     $ref: './v1/bucketgroups/paths.yaml#/bucketgroups'
@@ -101,6 +113,9 @@ paths:
 
   /api/v1/kernels/{id}/run:
     $ref: './v1/kernels/run.yaml#/run'
+
+  /api/v1/kernels/{id}/parameter:
+    $ref: './v1/kernels/params.yaml#/params'
 
 components:
   securitySchemes:

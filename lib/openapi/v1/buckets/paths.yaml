@@ -62,10 +62,11 @@ buckets-{id}:
 
   delete:
     operationId: DeleteBucket
-    summary: Returns the meta data for a single bucket or device.
+    summary: Remove the entire bucket.
     description: |
-      A bucket always has an attached set of meta data, like a name or information about the origin from which it has been imported.
-      Deleting a non-existing bucket returns also a 202 or 204.
+      The entire bucket including meta data and time series data is removed. 
+      The current implementation is always blocking and returns a 204 on success. 
+     
 
     security:
       - bearerAuth: [ ]
@@ -79,8 +80,6 @@ buckets-{id}:
         schema:
           $ref: '../uuid/UUID.yaml'
     responses:
-      '202':
-        $ref: '../errors/C202.yaml'
       '204':
         $ref: '../errors/C204.yaml'
       '400':

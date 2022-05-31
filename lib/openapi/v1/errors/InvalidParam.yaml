@@ -1,5 +1,7 @@
 type: object
-
+description: |
+  InvalidParam contains a name and reason tuple to describe a field related problem, typically used by
+  for form validation.
 example:
   name: .address.firstname
   reason: "firstname must not be empty."

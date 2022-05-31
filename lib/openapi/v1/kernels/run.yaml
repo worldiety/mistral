@@ -5,7 +5,7 @@ run:
       - bearerAuth: [ ]
     tags:
       - kernels
-    summary: Executes a stored MiEl compute kernel.
+    summary: Executes a stored compute kernel.
     description: Loads the kernel respective stored procedure by its ID and execute it with the given parameters submitted as a json body. See also
     parameters:
       - in: header

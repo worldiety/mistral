@@ -9,28 +9,27 @@ params:
     description: This endpoint returns the examples and structures about the request input and response output parameter specification.
       The MiEL code will get executed partially to get this information.
     parameters:
-      - name: procID
+      - name: id
         in: path
         description: 'ID of the stored procedure.'
         required: true
         schema:
-          type: string
-          format: uuid
+          $ref: '../uuid/UUID.yaml'
     responses:
       '200':
-        description: Returns the parameter data.
+        description: Returns the input and output parameter data as declared by the kernel.
         content:
           application/json:
             schema:
-              $ref: './ParamInfo'
+              $ref: './ParamInfo.yaml'
 
 
-      '403':
-        description: 'Invalid bearer token'
+
       '400':
-        description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
       '404':
-        description: 'Not found is returned, if no meta data exists. However the device itself may exist and may have metrics.'
+        $ref: '../errors/C404.yaml'
       '500':
-        description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
-
+        $ref: '../errors/C500.yaml'

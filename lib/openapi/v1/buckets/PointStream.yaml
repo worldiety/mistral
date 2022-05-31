@@ -1,0 +1,36 @@
+type: object
+description: |
+  A PointStream is like a JSON array of points, but actually it is not JSON.
+  Instead it uses a newline delimited json object encoding, as described by https://github.com/ndjson/ndjson-spec.
+  Server and client implementations are encouraged to use a chunked encoding to avoid full buffering, so
+  expect that your implementation should parse and process until _EOF_ (end of file).
+  
+  ```json
+  {"x": 1653988963, "y": 42}\n
+  {"x": 1653988964, "y": 43}\n
+  {"x": 1653988965, "y": 44}\n
+  ```
+example: |
+  {"x": 1653988963, "y": 42}
+  
+  {"x": 1653988964, "y": 43}
+  
+  {"x": 1653988965, "y": 44}
+properties:
+  x:
+    type: number
+    format: int64
+    description: |
+      X is the unique unix timestamp, usually in seconds since Epoch.
+      It does intentionally not carry information about timezones or UTF offsets.
+      For proper calculation and transformation (like grouping by day), use the [kernels API](#tag/kernels).
+      If otherwise required, you can get the buckets time zone from the [bucket](#tag/buckets/operation/GetBucket).
+    example: 1653988963
+  y:
+    type: number
+    format: int64
+    description: |
+      Y is the pre-scaled value for the timestamp, usually a metric value. 
+      Consult the metric endpoints, to learn more about the meaning of this value, e.g. what it means (like kWh)
+      or how it must be post-multiplied to be displayed properly.
+    example: 42

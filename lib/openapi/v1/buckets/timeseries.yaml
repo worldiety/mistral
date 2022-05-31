@@ -1,0 +1,172 @@
+timeseries:
+  get:
+    operationId: GetRange
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - timeseries
+    summary: returns time series data.
+    description: |
+      Returns an entire range of unfiltered time series data as a stream.
+
+    parameters:
+      - name: bucket-id
+        in: path
+        description: 'Identifier of the bucket (e.g. a device).'
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+      - name: metric-id
+        in: path
+        description: 'Identifier of the metric within the bucket.'
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+      - name: interval
+        in: query
+        description:
+          $ref: '../time/Range.yaml#/description'
+        required: true
+        schema:
+          $ref: '../time/Range.yaml'
+
+    responses:
+      '200':
+        description:
+          $ref: './PointStream.yaml#/description'
+        content:
+          application/x-ndjson:
+            schema:
+              $ref: './PointStream.yaml'
+
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '404':
+        $ref: '../errors/C404.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'
+
+  delete:
+    operationId: DeleteRange
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - timeseries
+    summary: delete time series data.
+    description: |
+      This endpoint provides the possibility to remove an entire range of time series data for a specific bucket (like a device) and metric.
+      
+
+
+    parameters:
+      - name: 'X-Flush'
+        in: header
+        description:
+          $ref: '../errors/XFlush.yaml#/description'
+        required: false
+        schema:
+          type: boolean
+          default: false
+      - name: bucket-id
+        in: path
+        description: 'Identifier of the bucket (e.g. a device).'
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+      - name: metric-id
+        in: path
+        description: 'Identifier of the metric within the bucket.'
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+      - name: interval
+        in: query
+        description:
+          $ref: '../time/Range.yaml#/description'
+        required: true
+        schema:
+          $ref: '../time/Range.yaml'
+
+    responses:
+      '202':
+        $ref: '../errors/C202.yaml'
+      '204':
+        $ref: '../errors/C204.yaml'
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '404':
+        $ref: '../errors/C404.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'
+
+
+  post:
+    operationId: PutPoints
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - timeseries
+    summary: Insert, append or update metric data.
+    description: |
+      A post will create a device, if required. Given time series data is either appended, inserted or already existing
+      values are updated. The data is only available after a flush, which may usually only happen once an hour. However, for
+      testing purposes or if you are going to calculate carefully and insert huge amounts of data (gigabytes), you can flush
+      the data explicitly.
+      
+      **Warning**: you should never put a single value for all of your devices and call flush for each.
+      This will hurt your servers performance seriously! Rule of thumb: if you are not sure, do not use the _X-Flush_ parameter.
+      
+      The X axis of the dataset is stored as a strict monotonic arbitrary integer.
+      However, group functions (like group by day) interpret the value
+      as a Unix timestamp in seconds.
+      
+    
+
+    parameters:
+      - name: 'X-Flush'
+        in: header
+        description:
+          $ref: '../errors/XFlush.yaml#/description'
+        required: false
+        schema:
+          type: boolean
+          default: false
+      - name: bucket-id
+        in: path
+        description: 'Identifier of the bucket (e.g. a device).'
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+      - name: metric-id
+        in: path
+        description: 'Identifier of the metric within the bucket.'
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+
+    requestBody:
+      required: true
+      description:
+        $ref: './PointStream.yaml#/description'
+      content:
+        application/x-ndjson:
+          schema:
+            $ref: './PointStream.yaml'
+
+    responses:
+      '202':
+        $ref: '../errors/C202.yaml'
+      '204':
+        $ref: '../errors/C204.yaml'
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '404':
+        $ref: '../errors/C404.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'

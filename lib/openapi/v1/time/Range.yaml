@@ -1,0 +1,11 @@
+description: |
+  Range is a string representation of a range. ( or ] can be used to indicate exclusive and inclusive intervals.
+  ( or ) means exclusive and [ or ] means inclusive.
+  
+  Format specification:
+  
+    ```< [|( > < min >, < max > < ]|) > @ < IANA time zone name >```
+
+
+type: string
+example: "[2038-01-19 03:14:07,2038-01-19 03:14:07]@Europe/Berlin"

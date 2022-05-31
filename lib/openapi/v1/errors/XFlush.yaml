@@ -1,0 +1,12 @@
+description: |
+  This header is optional. Default is false to just append it to the _write ahead log_ (WAL). 
+  Depending on the servers configuration, this may take the entire commit window (default is 1 hour).
+  If true, a database flush is enforced which may block and make changes immediately visible. 
+  It will compact and shard the data and write it atomically into the servers filesystem. 
+  Afterwards, the device index is reloaded and the data can be read back.
+  Depending on the load, this may cause massive performance penalties and may even cause timeouts, especially
+  when used concurrently or if the machine is already under load or the _write ahead log_ is huge.
+  
+  If true, the response code is 204 on success, otherwise a 202.
+  
+ 

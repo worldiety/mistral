@@ -60,5 +60,7 @@ properties:
   invalid-params:
     type: array
     nullable: false
+    description:
+      $ref: './InvalidParam.yaml#/description'
     items:
       $ref: './InvalidParam.yaml'
