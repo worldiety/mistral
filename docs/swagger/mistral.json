@@ -1,0 +1,1494 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "worldiety mistral",
+    "version": "1.20.0",
+    "description": "*mistral* is a very specialized database powered by *worldiety* which supports the storage and retrieval of time based sensor metrics for devices. It scales quite well for billions of values on a single node.\n",
+    "license": {
+      "name": "worldiety Enterprise Edition (EE) Lizenz (die \"EE Lizenz\")",
+      "url": "https://worldiety.github.io/mistral/LICENSE"
+    },
+    "x-logo": {
+      "url": "https://worldiety.github.io/mistral/wdy-logo.svg",
+      "altText": "worldiety logo",
+      "href": "https://www.worldiety.de/produkte/mistral"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://mistral.worldiety.net"
+    }
+  ],
+  "tags": [
+    {
+      "name": "status",
+      "description": "This resource provides basic health information about the service.\nIt is conventionally provided to support a hosting within complex infrastructures \nlike kubernetes. A successful response does not mean that everything is actually\nfine. It just executes some basic checks and inspections to prove that in general\nthe service should be able to process requests.\n"
+    },
+    {
+      "name": "buckets",
+      "description": "Resources of _buckets_ provide access to both, meta data and actual time series data.\nA bucket represents usually a device like a wind generator but may also be used\nfor other time-based data required e.g. for accounting.\n\nAdvanced querying and aggregation is only possible by using the computational kernel API.\n"
+    },
+    {
+      "name": "bucketgroups",
+      "description": "Resources of _bucketgroups_ represent groups of buckets (or devices), often known as portfolios.\nThis resource is purely virtual and can be used to simplify the development and \nusage of computational kernels. \n\nFor example, it may make sense to create a group\nrepresenting a clients portfolio of wind generators he owns. Then, a compute kernel\nmay just take the group identifier to load all contained bucket identifiers itself.\n"
+    },
+    {
+      "name": "kernels",
+      "description": "Resources of _kernels_ represent the compute kernels written in the MiEl language - \na subset respective dialect of the Go programming language. \nYou should avoid the creation or modification of kernels from end-users, to\nprotect your service against DoS-like attacks. Even though the execution is sandboxed\nand that there is no standard library available, a kernel can still consume an unreasonable\namount of CPU or memory resources.\n\nMistral distributes and schedules these kernels as execution is requested.\nA kernel usually assembles a pipeline of pre-compiled fixed-function aggregation\nalgorithms and transforms the result into an arbitrary (json) structure.\nThis avoid to transfer and serialize large sets of data through the network, which\notherwise would degrade system performance multiple orders of magnitude.\nThus, always keep in mind to bring the computation to the data (your MiEL compute kernel)\ninstead of just serializing the data over the wire into your middleware.\n\nMistral also provides a bunch of build-in and ready-to-use kernels, which cannot be modified and\nmay be optimized and updated in future releases. These kernels are especially useful\nfor basic inspection and data analysis tasks.\n"
+    },
+    {
+      "name": "timeseries",
+      "description": "Resources of _timeseries_ allows access to ranges of stored time series data within a specific\nbucket and metric. \nAll time series data within a bucket and metric is treated uniquely per time stamp, which should\nbe represented as a Unix timestamp in seconds since Epoch, which is also expected by\nall [MiEl kernel functions](#tag/kernels).\n"
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "GetStatus",
+        "tags": [
+          "status"
+        ],
+        "summary": "Shows some health metrics about this service.",
+        "description": "It follows more or less the https://tools.ietf.org/id/draft-inadarei-api-health-check-01.html draft.",
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/buckets": {
+      "get": {
+        "operationId": "ListBuckets",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "buckets"
+        ],
+        "summary": "Returns the meta data for all available buckets.",
+        "description": "This endpoint returns the entire set of all available devices (or time series buckets in general). This just contains the meta data.",
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Bucket"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/buckets/{id}": {
+      "get": {
+        "operationId": "GetBucket",
+        "summary": "Returns the meta data for a single bucket or device.",
+        "description": "A bucket always has an attached set of meta data, like a name or information about the origin from which it has been imported.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "buckets"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "description": "The bucket identifier.",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bucket"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "404": {
+            "$ref": "#/components/responses/C404"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteBucket",
+        "summary": "Remove the entire bucket.",
+        "description": "The entire bucket including meta data and time series data is removed. \nThe current implementation is always blocking and returns a 204 on success. \n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "buckets"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "description": "The bucket identifier.",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/C204"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      },
+      "put": {
+        "operationId": "SaveBucket",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "buckets"
+        ],
+        "summary": "Creates or updates the meta data for the bucket.",
+        "description": "A device may have additional meta data, like a name or information about the origin from which it has been imported.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The bucket identifier.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Bucket"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/C201"
+          },
+          "202": {
+            "$ref": "#/components/responses/C202"
+          },
+          "204": {
+            "$ref": "#/components/responses/C204"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/buckets/{bucket-id}/timeseries/{metric-id}": {
+      "get": {
+        "operationId": "GetRange",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "timeseries"
+        ],
+        "summary": "returns time series data.",
+        "description": "Returns an entire range of unfiltered time series data as a stream.\n",
+        "parameters": [
+          {
+            "name": "bucket-id",
+            "in": "path",
+            "description": "Identifier of the bucket (e.g. a device).",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          },
+          {
+            "name": "metric-id",
+            "in": "path",
+            "description": "Identifier of the metric within the bucket.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "Range is a string representation of a range. ( or ] can be used to indicate exclusive and inclusive intervals.\n( or ) means exclusive and [ or ] means inclusive.\n\nFormat specification:\n\n  ```< [|( > < min >, < max > < ]|) > @ < IANA time zone name >```\n",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Range"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A PointStream is like a JSON array of points, but actually it is not JSON.\nInstead it uses a newline delimited json object encoding, as described by https://github.com/ndjson/ndjson-spec.\nServer and client implementations are encouraged to use a chunked encoding to avoid full buffering, so\nexpect that your implementation should parse and process until _EOF_ (end of file).\n\n```json\n{\"x\": 1653988963, \"y\": 42}\\n\n{\"x\": 1653988964, \"y\": 43}\\n\n{\"x\": 1653988965, \"y\": 44}\\n\n```\n",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/PointStream"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "404": {
+            "$ref": "#/components/responses/C404"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteRange",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "timeseries"
+        ],
+        "summary": "delete time series data.",
+        "description": "This endpoint provides the possibility to remove an entire range of time series data for a specific bucket (like a device) and metric.\n",
+        "parameters": [
+          {
+            "name": "X-Flush",
+            "in": "header",
+            "description": "This header is optional. Default is false to just append it to the _write ahead log_ (WAL). \nDepending on the servers configuration, this may take the entire commit window (default is 1 hour).\nIf true, a database flush is enforced which may block and make changes immediately visible. \nIt will compact and shard the data and write it atomically into the servers filesystem. \nAfterwards, the device index is reloaded and the data can be read back.\nDepending on the load, this may cause massive performance penalties and may even cause timeouts, especially\nwhen used concurrently or if the machine is already under load or the _write ahead log_ is huge.\n\nIf true, the response code is 204 on success, otherwise a 202.\n",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "bucket-id",
+            "in": "path",
+            "description": "Identifier of the bucket (e.g. a device).",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          },
+          {
+            "name": "metric-id",
+            "in": "path",
+            "description": "Identifier of the metric within the bucket.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "Range is a string representation of a range. ( or ] can be used to indicate exclusive and inclusive intervals.\n( or ) means exclusive and [ or ] means inclusive.\n\nFormat specification:\n\n  ```< [|( > < min >, < max > < ]|) > @ < IANA time zone name >```\n",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Range"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/C202"
+          },
+          "204": {
+            "$ref": "#/components/responses/C204"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "404": {
+            "$ref": "#/components/responses/C404"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      },
+      "post": {
+        "operationId": "PutPoints",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "timeseries"
+        ],
+        "summary": "Insert, append or update metric data.",
+        "description": "A post will create a device, if required. Given time series data is either appended, inserted or already existing\nvalues are updated. The data is only available after a flush, which may usually only happen once an hour. However, for\ntesting purposes or if you are going to calculate carefully and insert huge amounts of data (gigabytes), you can flush\nthe data explicitly.\n\n**Warning**: you should never put a single value for all of your devices and call flush for each.\nThis will hurt your servers performance seriously! Rule of thumb: if you are not sure, do not use the _X-Flush_ parameter.\n\nThe X axis of the dataset is stored as a strict monotonic arbitrary integer.\nHowever, group functions (like group by day) interpret the value\nas a Unix timestamp in seconds.\n",
+        "parameters": [
+          {
+            "name": "X-Flush",
+            "in": "header",
+            "description": "This header is optional. Default is false to just append it to the _write ahead log_ (WAL). \nDepending on the servers configuration, this may take the entire commit window (default is 1 hour).\nIf true, a database flush is enforced which may block and make changes immediately visible. \nIt will compact and shard the data and write it atomically into the servers filesystem. \nAfterwards, the device index is reloaded and the data can be read back.\nDepending on the load, this may cause massive performance penalties and may even cause timeouts, especially\nwhen used concurrently or if the machine is already under load or the _write ahead log_ is huge.\n\nIf true, the response code is 204 on success, otherwise a 202.\n",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "bucket-id",
+            "in": "path",
+            "description": "Identifier of the bucket (e.g. a device).",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          },
+          {
+            "name": "metric-id",
+            "in": "path",
+            "description": "Identifier of the metric within the bucket.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "A PointStream is like a JSON array of points, but actually it is not JSON.\nInstead it uses a newline delimited json object encoding, as described by https://github.com/ndjson/ndjson-spec.\nServer and client implementations are encouraged to use a chunked encoding to avoid full buffering, so\nexpect that your implementation should parse and process until _EOF_ (end of file).\n\n```json\n{\"x\": 1653988963, \"y\": 42}\\n\n{\"x\": 1653988964, \"y\": 43}\\n\n{\"x\": 1653988965, \"y\": 44}\\n\n```\n",
+          "content": {
+            "application/x-ndjson": {
+              "schema": {
+                "$ref": "#/components/schemas/PointStream"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/C202"
+          },
+          "204": {
+            "$ref": "#/components/responses/C204"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "404": {
+            "$ref": "#/components/responses/C404"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/bucketgroups": {
+      "get": {
+        "operationId": "ListBucketGroups",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "bucketgroups"
+        ],
+        "summary": "Returns the all available bucket groups.",
+        "description": "This endpoint returns the entire set of all available groups of buckets.",
+        "responses": {
+          "200": {
+            "description": "Returns the group data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BucketGroup"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/bucketgroups/{id}": {
+      "get": {
+        "operationId": "GetBucketGroup",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "bucketgroups"
+        ],
+        "summary": "Returns the bucket meta data for the id.",
+        "description": "This endpoint returns the meta data about a single stored bucket group.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the bucket group.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the buckets meta data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BucketGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "404": {
+            "$ref": "#/components/responses/C404"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      },
+      "put": {
+        "operationId": "SaveBucketGroup",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "bucketgroups"
+        ],
+        "summary": "Creates or updates the denoted bucket group.",
+        "description": "Create or update a bucket group containing reference identifiers to buckets. If the resource does not yet exist, it will be created.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the bucket group.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BucketGroup"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/C201"
+          },
+          "202": {
+            "$ref": "#/components/responses/C202"
+          },
+          "204": {
+            "$ref": "#/components/responses/C204"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteBucketGroup",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "bucketgroups"
+        ],
+        "summary": "Removes a bucket group.",
+        "description": "Removes the specified bucket group. All referenced buckets are kept alive.\nDeleting a non-existing bucket group will also return 202 or 204.\n",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of bucket group.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/C202"
+          },
+          "204": {
+            "$ref": "#/components/responses/C204"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/kernels": {
+      "get": {
+        "operationId": "ListKernels",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "kernels"
+        ],
+        "summary": "Returns all compute kernels and their according meta data.",
+        "description": "This endpoint returns the entire set of all available stored procedures.",
+        "responses": {
+          "200": {
+            "description": "Returns the list of kernels.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Kernel"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/kernels/{id}": {
+      "get": {
+        "operationId": "LoadKernel",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "kernels"
+        ],
+        "summary": "Returns the meta data for a specific proc.",
+        "description": "This endpoint returns the meta data about a single stored procedure.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the compute kernel stored procedure.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the compute kernel.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Kernel"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "404": {
+            "$ref": "#/components/responses/C404"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      },
+      "put": {
+        "operationId": "SaveKernel",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "kernels"
+        ],
+        "summary": "Updates the kernel.",
+        "description": "The kernel consists of a few meta data and the actual MiEl compute kernel script. If the resource does not yet exist, it is created.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the kernel respective stored procedure.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Kernel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/C201"
+          },
+          "202": {
+            "$ref": "#/components/responses/C202"
+          },
+          "204": {
+            "$ref": "#/components/responses/C204"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteKernel",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "kernels"
+        ],
+        "summary": "Removes the kernel.",
+        "description": "Removes a compute kernel and its meta data. Deleting a non-existing kernel is not an error.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the stored procedure.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/C202"
+          },
+          "204": {
+            "$ref": "#/components/responses/C204"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/eval/kernel": {
+      "post": {
+        "operationId": "EvalKernel",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "kernels"
+        ],
+        "summary": "Evaluates a non-persistent compute kernel.",
+        "description": "Useful to avoid that one-shot scripts must be stored, loaded and deleted. Provides instant validation feedback to the user.",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-TZ",
+            "schema": {
+              "$ref": "#/components/schemas/Timezone"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Viewport-Width",
+            "schema": {
+              "$ref": "#/components/schemas/ViewportWidth"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "params": {
+                    "$ref": "#/components/schemas/KernelParam"
+                  },
+                  "src": {
+                    "description": "src contains the MiEl compute kernel which shall be executed using the given header and kernel parameters.",
+                    "$ref": "#/components/schemas/MiEl"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/KernelResult"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/kernels/{id}/run": {
+      "post": {
+        "operationId": "RunKernel",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "kernels"
+        ],
+        "summary": "Executes a stored compute kernel.",
+        "description": "Loads the kernel respective stored procedure by its ID and execute it with the given parameters submitted as a json body. See also",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-TZ",
+            "schema": {
+              "$ref": "#/components/schemas/Timezone"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Viewport-Width",
+            "schema": {
+              "$ref": "#/components/schemas/ViewportWidth"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the compute kernel.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KernelParam"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/KernelResult"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/kernels/{id}/parameter": {
+      "get": {
+        "operationId": "GetParams",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "kernels"
+        ],
+        "summary": "Returns the input and output parameter definition, if available.",
+        "description": "This endpoint returns the examples and structures about the request input and response output parameter specification. The MiEL code will get executed partially to get this information.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of the stored procedure.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the input and output parameter data as declared by the kernel.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParamInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "404": {
+            "$ref": "#/components/responses/C404"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Securitywise, mistral does not provide its own authentication or authorization\ninfrastructure. The intended modus operandi locates mistral into a private\nnetwork, with a custom gateway API or middleware in front of it. \nThere is no ownership of buckets, time series data or users in general, which\nalso means, that this kind of authorization must be guaranteed by the according \nupstream service. Therefore, there is only a single basic level of security, based\non a secret bearer token, which must be exchanged through an external secure channel.\nUsually, you want to exchange and deploy these secrets at least through\ndynamic environment variables within your deployment infrastructure.\n"
+      }
+    },
+    "schemas": {
+      "Status": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "warn",
+              "fail"
+            ],
+            "description": "e.g. pass or fail or warn.",
+            "nullable": false
+          },
+          "version": {
+            "type": "string",
+            "description": "the vcs (git) commit hash.",
+            "nullable": false
+          },
+          "releaseID": {
+            "type": "string",
+            "description": "a semantic version like v1.2.3.",
+            "nullable": false
+          },
+          "description": {
+            "type": "string",
+            "description": "some details about the service.",
+            "nullable": false
+          }
+        }
+      },
+      "InvalidParam": {
+        "type": "object",
+        "description": "InvalidParam contains a name and reason tuple to describe a field related problem, typically used by\nfor form validation.\n",
+        "example": {
+          "name": ".address.firstname",
+          "reason": "firstname must not be empty."
+        },
+        "properties": {
+          "name": {
+            "type": "string",
+            "format": "jq",
+            "description": "The jq or javascript compatible field selector.",
+            "nullable": false
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason is the localized message to handout to the end-user.",
+            "nullable": false
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "description": "A ProblemDetails type describes a problem with field selector extensions using\nrfc7807 - see also https://datatracker.ietf.org/doc/html/rfc7807.\n",
+        "example": {
+          "type": "ora://validation-error",
+          "title": "Invalid value.",
+          "status": 400,
+          "detail": "Your firstname must not be empty.",
+          "instance": "trace://550e8400-e29b-11d4-a716-446655440000",
+          "invalid-params": [
+            {
+              "name": ".address.firstname",
+              "reason": "Your firstname must not be empty."
+            }
+          ]
+        },
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri",
+            "nullable": false,
+            "description": "Consumers MUST use the 'type' string as the primary identifier for\nthe problem type. This must not be a URL but may also be a URI.\n"
+          },
+          "title": {
+            "type": "string",
+            "default": "",
+            "nullable": false,
+            "description": "A short, human-readable summary of the problem\ntype.  It SHOULD NOT change from occurrence to occurrence of the\nproblem, except for purposes of localization.\n"
+          },
+          "status": {
+            "type": "number",
+            "nullable": false,
+            "format": "int32",
+            "description": "The HTTP status code."
+          },
+          "detail": {
+            "type": "string",
+            "nullable": false,
+            "default": "",
+            "description": "A human-readable explanation specific to this\noccurrence of the problem.\n"
+          },
+          "instance": {
+            "type": "string",
+            "nullable": false,
+            "format": "uri",
+            "description": "A URI reference that identifies the specific\noccurrence of the problem. It contains a random\nuuid to identify each problem individually and which\ncan be used to trace within the log files. Intentionally,\nthis cannot be dereferenced to not leak implementation details\nand therefore increase the attack surface.\n"
+          },
+          "invalid-params": {
+            "type": "array",
+            "nullable": false,
+            "description": "InvalidParam contains a name and reason tuple to describe a field related problem, typically used by\nfor form validation.\n",
+            "items": {
+              "$ref": "#/components/schemas/InvalidParam"
+            }
+          }
+        }
+      },
+      "UUID": {
+        "type": "string",
+        "format": "uuid",
+        "description": "The unique ID of the resource in the canonical UUID format.",
+        "example": "550e8400-e29b-11d4-a716-446655440000"
+      },
+      "BucketType": {
+        "type": "string",
+        "description": "A BucketType describes the type of generator or holder of time series data.",
+        "enum": [
+          "wind",
+          "photo",
+          "solar",
+          "geo",
+          "bio",
+          "client",
+          "account",
+          "other"
+        ]
+      },
+      "Timezone": {
+        "type": "string",
+        "format": "timezone",
+        "description": "An IANA time zone identifier like Europe/Berlin.",
+        "example": "Europe/Berlin"
+      },
+      "Translations": {
+        "type": "object",
+        "description": "Translations holds text for arbitrary nested static field values. Root keys are in the RFC 5646 format.\nStructure (fields and nesting) must match the translatable values of the original resource.\n",
+        "example": {
+          "en": {
+            "device": "my name",
+            "address": {
+              "tags": [
+                "red",
+                "Large"
+              ]
+            }
+          },
+          "de_AT": {
+            "device": "Gerät",
+            "address": {
+              "tags": [
+                "Rot",
+                "Groß"
+              ]
+            }
+          },
+          "fr": {
+            "device": "appareil",
+            "address": {
+              "tags": [
+                "rouge",
+                "grande"
+              ]
+            }
+          }
+        }
+      },
+      "Bucket": {
+        "type": "object",
+        "description": "Bucket describes a namespace for stored metric time series data. \nA bucket usually represents a physical device like a wind turbine which \nhas an immutable physical location. Other meanings may include customer accounts \nfor financial data.\n",
+        "required": [
+          "id",
+          "type",
+          "name",
+          "timezone"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID",
+            "nullable": false
+          },
+          "name": {
+            "type": "string",
+            "description": "the default name to display.",
+            "nullable": false
+          },
+          "description": {
+            "type": "string",
+            "description": "the default description about this bucket.",
+            "nullable": false
+          },
+          "type": {
+            "nullable": false,
+            "$ref": "#/components/schemas/BucketType"
+          },
+          "timezone": {
+            "nullable": false,
+            "$ref": "#/components/schemas/Timezone"
+          },
+          "sources": {
+            "nullable": false,
+            "deprecated": true,
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Type is an arbitrary id or name of to categorize the source."
+              },
+              "fields": {
+                "type": "object",
+                "description": "arbitrary map of key/values."
+              }
+            }
+          },
+          "xattr": {
+            "nullable": false,
+            "type": "object",
+            "description": "arbitrary optional map of any kind of attributes."
+          },
+          "translations": {
+            "$ref": "#/components/schemas/Translations"
+          }
+        }
+      },
+      "Range": {
+        "description": "Range is a string representation of a range. ( or ] can be used to indicate exclusive and inclusive intervals.\n( or ) means exclusive and [ or ] means inclusive.\n\nFormat specification:\n\n  ```< [|( > < min >, < max > < ]|) > @ < IANA time zone name >```\n",
+        "type": "string",
+        "example": "[2038-01-19 03:14:07,2038-01-19 03:14:07]@Europe/Berlin"
+      },
+      "PointStream": {
+        "type": "object",
+        "description": "A PointStream is like a JSON array of points, but actually it is not JSON.\nInstead it uses a newline delimited json object encoding, as described by https://github.com/ndjson/ndjson-spec.\nServer and client implementations are encouraged to use a chunked encoding to avoid full buffering, so\nexpect that your implementation should parse and process until _EOF_ (end of file).\n\n```json\n{\"x\": 1653988963, \"y\": 42}\\n\n{\"x\": 1653988964, \"y\": 43}\\n\n{\"x\": 1653988965, \"y\": 44}\\n\n```\n",
+        "example": "{\"x\": 1653988963, \"y\": 42}\n\n{\"x\": 1653988964, \"y\": 43}\n\n{\"x\": 1653988965, \"y\": 44}\n",
+        "properties": {
+          "x": {
+            "type": "number",
+            "format": "int64",
+            "description": "X is the unique unix timestamp, usually in seconds since Epoch.\nIt does intentionally not carry information about timezones or UTF offsets.\nFor proper calculation and transformation (like grouping by day), use the [kernels API](#tag/kernels).\nIf otherwise required, you can get the buckets time zone from the [bucket](#tag/buckets/operation/GetBucket).\n",
+            "example": 1653988963
+          },
+          "y": {
+            "type": "number",
+            "format": "int64",
+            "description": "Y is the pre-scaled value for the timestamp, usually a metric value. \nConsult the metric endpoints, to learn more about the meaning of this value, e.g. what it means (like kWh)\nor how it must be post-multiplied to be displayed properly.\n",
+            "example": 42
+          }
+        }
+      },
+      "BucketGroupType": {
+        "type": "string",
+        "description": "A BucketGroupType describes the type of group of buckets.",
+        "enum": [
+          "other"
+        ]
+      },
+      "BucketGroup": {
+        "type": "object",
+        "description": "A BucketGroup is a collection of buckets with an arbitrary meaning.",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "type",
+          "buckets"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID",
+            "description": "The unique ID of the bucket group.",
+            "nullable": false
+          },
+          "name": {
+            "type": "string",
+            "description": "the default name to display.",
+            "nullable": false
+          },
+          "description": {
+            "type": "string",
+            "description": "the default description about this bucket.",
+            "nullable": false
+          },
+          "type": {
+            "nullable": false,
+            "$ref": "#/components/schemas/BucketGroupType"
+          },
+          "buckets": {
+            "type": "array",
+            "nullable": false,
+            "items": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          },
+          "translations": {
+            "$ref": "#/components/schemas/Translations"
+          }
+        }
+      },
+      "MiEl": {
+        "type": "string",
+        "example": "package main \n\nimport (\n    \"context\"\n    miel \"github.com/worldiety/mistral/lib/go/dsl/v1\"\n)\n\n// Request is an arbitrary defined input parameter type parsed from an application/json body.\n// See also lines 41 and 42 for deserialization.\ntype Request struct {\n    Portfolio miel.UUIDs         `json:\"device-ids\"`\n    Metric    miel.UUID          `json:\"metric-id\"`\n    Type      miel.AggregateFunc `json:\"type\"`\n    Range     miel.Range\n    TZ        miel.TZ\n}\n\n// Response is an arbitrary defined output parameter type serialized as an application/json body.\ntype Response struct {\n    Portfolio     miel.FPoints\n    MyDevices     miel.FGroup\n    MyDeviceNames []string\n}\n\n// Declare is a function which serves two purposes:\n//  1. declare which types are input and output parameters. This is best-practice to generate automatic documentation.\n//  2. return examples for each, also just for automatic documentation.\n// See also line 58.\nfunc Declare() (interface{}, interface{}) {\n    return Request{\n        Portfolio: miel.UUIDs{miel.UUID{}},\n        Type:      miel.AvgY,\n    }, Response{}\n}\n\n// Eval provides the actual calculation kernel and operation. It extracts concrete instances from the given context.\n// The implementation must be thread-safe and must not share any state between executions.\n// It is undefined, whether Eval is executed serializable, concurrently and/or on multiple independent Mistral cluster\n// instances at the same time.\n// See also line 59.\nfunc Eval(ctx context.Context) {\n    var request Request         // declare a variable using our custom request type\n    miel.Request(ctx, &request) // parse our custom request type\n\n    loc := request.TZ.MustParse()\n    miel.Query(ctx).\n        FindInRange(request.Portfolio, request.Metric, request.Range).\n        ForEach(func(pts miel.Points) miel.Points {\n            return pts.GroupByDay(miel.NoDrift, miel.AlignGroupStart, loc).Reduce(miel.AvgY)\n        })\n\n    miel.Response(ctx, Response{})\n}\n\n// main provides the default launching point.\nfunc main() {\n    miel.Configure().\n        Parameter(Declare).\n        Start(Eval) // eventually execute the Eval function\n}\n"
+      },
+      "Kernel": {
+        "type": "object",
+        "description": "ProcInfo contains the full set of readable meta data for a proc.",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "tags",
+          "src"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID",
+            "description": "The unique ID of the bucket group.",
+            "nullable": false
+          },
+          "src": {
+            "$ref": "#/components/schemas/MiEl"
+          },
+          "tags": {
+            "type": "array",
+            "description": "An arbitrary set of strings used as tags, e.g. indicating specific topics or templates.",
+            "example": [
+              "apexcharts",
+              "daily"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string",
+            "description": "A short but arbitrary debug name in the default language for an end-user. Use the translations field for language specific values.",
+            "example": "daily avg"
+          },
+          "description": {
+            "type": "string",
+            "description": "A longer and more descriptive text in the default language for an end-user about what the expression is about. Use the translations field for language specific values.",
+            "example": "a simple daily average calculation."
+          },
+          "translations": {
+            "$ref": "#/components/schemas/Translations"
+          }
+        }
+      },
+      "ViewportWidth": {
+        "type": "integer",
+        "description": "A hint from the client for the current view port width in css pixel.",
+        "example": 320,
+        "default": 512
+      },
+      "KernelParam": {
+        "type": "object",
+        "description": "In general the KernelParam is an arbitrary json object. \nHowever, it must match properly to exact that struct, which is expected and parsed by a specific compute kernel.\nSee also the parameters endpoint to learn more about the request and response type specification of a specific kernel.\n",
+        "example": {
+          "bucketID": "550e8400-e29b-11d4-a716-446655440000",
+          "metricID": "550e8400-e29b-11d4-a716-446655440000"
+        }
+      },
+      "ParamInfo": {
+        "type": "object",
+        "description": "ParamInfo describes the input and output specification of a MiEL compute kernel. However, this is just a hint from sane programs.",
+        "required": [
+          "example"
+        ],
+        "properties": {
+          "example": {
+            "type": "object",
+            "required": [
+              "request",
+              "response"
+            ],
+            "properties": {
+              "request": {
+                "type": "object",
+                "description": "An arbitrary response example.",
+                "example": {
+                  "bucketID": "550e8400-e29b-11d4-a716-446655440000",
+                  "metricID": "550e8400-e29b-11d4-a716-446655440000"
+                }
+              },
+              "response": {
+                "type": "object",
+                "description": "An arbitrary response example.",
+                "example": [
+                  {
+                    "x": 1,
+                    "y": 2
+                  },
+                  {
+                    "x": 3,
+                    "y": 4
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "C500": {
+        "description": "Internal Server Error is usually returned, if something went wrong at the server side. \nIf this problem persists, you should contact the support or your administrator and inspect the log files, to get more insight.\nTo help inspection, see the instance field of the ProblemDetails.\nSee also https://datatracker.ietf.org/doc/html/rfc7807.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "C400": {
+        "description": "Indicates a bad request, which is caused by performing an invalid request, like missing or wrong formatted parameter.\nInspect the returned ProblemDetails carefully to get some insight. \nSee also https://datatracker.ietf.org/doc/html/rfc7807.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "C403": {
+        "description": "Invalid bearer token. Consult your administrator or service provider to get the latest configured API token.\nSee also https://datatracker.ietf.org/doc/html/rfc7807.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "C404": {
+        "description": "The requested resource has not been found.\nSee also https://datatracker.ietf.org/doc/html/rfc7807.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "C201": {
+        "description": "Indicates that the request has succeeded and has created the resource.\n"
+      },
+      "C202": {
+        "description": "Indicates that the request has been accepted for processing, but the processing has not been completed. Indeed, processing may not have started yet.\n"
+      },
+      "C204": {
+        "description": "Indicates that the request has succeeded and the requested operation has been applied immediately and was successful. \n"
+      },
+      "KernelResult": {
+        "description": "Returned, if the request has been parsed and executed successfully. Indeed, the kernel has returned a reasonable response, which is most likely a JSON object.\nSee also the parameters endpoint to learn more about the request and response type specification of a specific kernel.\n",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "example": [
+                {
+                  "x": 1,
+                  "y": 2
+                },
+                {
+                  "x": 3,
+                  "y": 4
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

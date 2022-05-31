@@ -1,3 +1,6 @@
+image:https://img.shields.io/badge/oai-redoc-blue[link=https://worldiety.github.io/mistral/redoc]
+image:https://img.shields.io/badge/oai-swagger-brightgreen[link=https://worldiety.github.io/mistral/swagger]
+
 == mistral OpenAPI specification
 
 Here you can find the entire latest mistral REST API specification.
