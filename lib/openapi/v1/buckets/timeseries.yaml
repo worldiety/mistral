@@ -1,6 +1,6 @@
 timeseries:
   get:
-    operationId: GetRange
+    operationId: GetPoints
     security:
       - bearerAuth: [ ]
     tags:
@@ -49,7 +49,7 @@ timeseries:
         $ref: '../errors/C500.yaml'
 
   delete:
-    operationId: DeleteRange
+    operationId: DeletePoints
     security:
       - bearerAuth: [ ]
     tags:

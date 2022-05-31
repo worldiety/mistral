@@ -1,0 +1,35 @@
+type: number
+format: int64
+description: |
+  Metric values are usually based on a measured sampling over a time period. 
+  Therefore, it is not clear what a timestamp-value tuple actually means:
+  _Does the timestamp refer to the start, mid or end of the aggregation (==sampling?) period?_
+  This is important for data aggregation, because using a start or end-aggregated value
+  may be wrong, depending on its usage. 
+  TODO: definition and example
+  
+  ```
+          0s                              600s          
+    ─────────┬────────────────────────────────┬───────▶   
+             │ aggregation period (e.g. 600s) │           
+             │   value (e.g. sums up to 42)   │           
+             └────────────────────────────────┘           
+             ▲              ▲                 ▲           
+             │            <-│->               │           
+             │              │                 │           
+             │              │                 │           
+    ┌──────────────────┐    │                 │           
+    │ start-aggregated │    │                 │           
+    └──────────────────┘    │                 │           
+                            │                 │           
+                            │                 │           
+                            │         ┌──────────────────┐
+                            │         │  end-aggregated  │
+                            │         └──────────────────┘
+                            │                             
+              ┌─────────────┴─────────────┐               
+              │   e.g. start of day in    │               
+              │       Europe/Berlin       │               
+              │                           │               
+              └───────────────────────────┘               
+  ```

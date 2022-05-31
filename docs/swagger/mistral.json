@@ -34,11 +34,15 @@
     },
     {
       "name": "kernels",
-      "description": "Resources of _kernels_ represent the compute kernels written in the MiEl language - \na subset respective dialect of the Go programming language. \nYou should avoid the creation or modification of kernels from end-users, to\nprotect your service against DoS-like attacks. Even though the execution is sandboxed\nand that there is no standard library available, a kernel can still consume an unreasonable\namount of CPU or memory resources.\n\nMistral distributes and schedules these kernels as execution is requested.\nA kernel usually assembles a pipeline of pre-compiled fixed-function aggregation\nalgorithms and transforms the result into an arbitrary (json) structure.\nThis avoid to transfer and serialize large sets of data through the network, which\notherwise would degrade system performance multiple orders of magnitude.\nThus, always keep in mind to bring the computation to the data (your MiEL compute kernel)\ninstead of just serializing the data over the wire into your middleware.\n\nMistral also provides a bunch of build-in and ready-to-use kernels, which cannot be modified and\nmay be optimized and updated in future releases. These kernels are especially useful\nfor basic inspection and data analysis tasks.\n"
+      "description": "Resources of _kernels_ represent the compute kernels written in the MiEl language - \na subset respective dialect of the Go programming language. \nYou should avoid the creation or modification of kernels from end-users, to\nprotect your service against DoS-like attacks. Even though the execution is sandboxed\nand that there is no standard library available, a kernel can still consume an unreasonable\namount of CPU or memory resources.\n\nMistral distributes and schedules these kernels as execution is requested.\nA kernel usually assembles a pipeline of pre-compiled fixed-function aggregation\nalgorithms and transforms the result into an arbitrary (json) structure.\nThis avoid to transfer and serialize large sets of data through the network, which\notherwise would degrade system performance multiple orders of magnitude.\nThus, always keep in mind to bring the computation to the data (your MiEL compute kernel)\ninstead of just serializing the data over the wire into your middleware.\n\nMistral also provides a bunch of build-in and ready-to-use kernels, which cannot be modified and\nmay be optimized and updated in future releases. These kernels are especially useful\nfor basic inspection and data analysis tasks.\n\nExample for a MiEl compute kernel:\n\n```go\npackage main\n\nimport (\n  \"context\"\n  miel \"github.com/worldiety/mistral/lib/go/dsl/v1\"\n)\n\ntype Request struct {\n  Buckets []miel.UUID `json:\"buckets\"`\n  Metric  miel.UUID   `json:\"metric\"`\n  Range   miel.Range  `json:\"range\"`\n}\n\ntype Response struct {\n  BucketNames []string    `json:\"names\"`\n  MetricName  string      `json:\"metric\"`\n  Data        miel.FGroup `json:\"data\"`\n}\n\nfunc Declare() (interface{}, interface{}) {\n  return Request{\n      Buckets: []miel.UUID{miel.NewUUID()},\n      Metric:  miel.NewUUID(),\n      Range:   \"[2038-01-19 03:14:07,2038-01-19 03:14:07]@Europe/Berlin\",\n    }, Response{\n      BucketNames: []string{\"wind generator\"},\n      MetricName:  \"Windspeed in km/h\",\n      Data:        miel.FGroup{miel.FPoints{miel.FPoint{X: 1648826693, Y: 3.14}}},\n    }\n}\n\nfunc Eval(ctx context.Context) {\n  var request Request\n  miel.Request(ctx, &request)\n\n  scale := miel.Query(ctx).ScaleOf(request.Metric)\n  width := miel.ViewportWidth(ctx)\n\n  miel.Query(ctx).\n    FindInRange(request.Buckets, request.Metric, request.Range.MustInterval()).\n    ForEachF(func(pts miel.Points) miel.FPoints {\n      return pts.Downscale(width).Unscale(scale)\n    })\n\n  miel.Response(ctx, Response{})\n}\n\nfunc main() {\n  miel.Configure().\n    Parameter(Declare).\n    Start(Eval)\n}\n```\n"
     },
     {
       "name": "timeseries",
       "description": "Resources of _timeseries_ allows access to ranges of stored time series data within a specific\nbucket and metric. \nAll time series data within a bucket and metric is treated uniquely per time stamp, which should\nbe represented as a Unix timestamp in seconds since Epoch, which is also expected by\nall [MiEl kernel functions](#tag/kernels).\n"
+    },
+    {
+      "name": "metrics",
+      "description": "Resources of _metrics_ is a loosely coupled conventional meta data aggregation for details about metrics.\nTime series data is shared per bucket and uniquely addressed using a metric id.\nTo commonly manage information about a specific metric id, these resource can be used.\n"
     }
   ],
   "paths": {
@@ -63,6 +67,48 @@
           },
           "500": {
             "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/metrics": {
+      "get": {
+        "operationId": "ListMetrics",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "metrics"
+        ],
+        "summary": "Returns the meta data for a metric.",
+        "description": "A metric may have additional meta data, like a name or information about the origin from which it has been imported.",
+        "responses": {
+          "200": {
+            "description": "Returns the meta data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Metric"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request is usually returned, if you have missing or wrong formatted parameter."
+          },
+          "403": {
+            "description": "Invalid bearer token"
+          },
+          "404": {
+            "description": "Not found is returned, if no meta data exists. However the metric itself may exist for certain devices."
+          },
+          "500": {
+            "description": "Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight."
           }
         }
       }
@@ -250,7 +296,7 @@
     },
     "/api/v1/buckets/{bucket-id}/timeseries/{metric-id}": {
       "get": {
-        "operationId": "GetRange",
+        "operationId": "GetPoints",
         "security": [
           {
             "bearerAuth": []
@@ -316,7 +362,7 @@
         }
       },
       "delete": {
-        "operationId": "DeleteRange",
+        "operationId": "DeletePoints",
         "security": [
           {
             "bearerAuth": []
@@ -1122,6 +1168,74 @@
             "description": "InvalidParam contains a name and reason tuple to describe a field related problem, typically used by\nfor form validation.\n",
             "items": {
               "$ref": "#/components/schemas/InvalidParam"
+            }
+          }
+        }
+      },
+      "Resolution": {
+        "type": "string",
+        "description": "A Resolution describes the base interval of a sampling.\nThe following intervals are specified:\n  * `10m`: the metric value consists of whatever has been measured within a constant interval of 600 seconds.\n  * `15m`: the metric value consists of whatever has been measured within a constant interval of 900 seconds.\n  * `daily (deprecated)`: the metric value consists of whatever has been measured within a time zone specific interval.\n     It is deprecated because this indicates that a time zone dependent data aggregation has already happened which\n     makes sane post-processing nearly impossible. Use a compute [kernel](#tag/kernels) and a variable\n     timezone on a constant interval like 10m.\n   * `monthly (deprecated)`: the metric value consists of whatever has been measured within a time zone specific interval.\n     It is deprecated because this indicates that a time zone dependent data aggregation has already happened which\n     makes sane post-processing nearly impossible. Use a compute [kernel](#tag/kernels) and a variable\n     timezone on a constant interval like 10m.\n\nAdditional intervals may be standardized later. \nImplementations must accept non-standardized intervals, which may be passed and evaluated by a custom compute [kernel](#tag/kernels).\n",
+        "enum": [
+          "10m",
+          "15m",
+          "daily",
+          "monthly"
+        ]
+      },
+      "Drift": {
+        "type": "number",
+        "format": "int64",
+        "description": "Metric values are usually based on a measured sampling over a time period. \nTherefore, it is not clear what a timestamp-value tuple actually means:\n_Does the timestamp refer to the start, mid or end of the aggregation (==sampling?) period?_\nThis is important for data aggregation, because using a start or end-aggregated value\nmay be wrong, depending on its usage. \nTODO: definition and example\n\n```\n        0s                              600s          \n  ─────────┬────────────────────────────────┬───────▶   \n           │ aggregation period (e.g. 600s) │           \n           │   value (e.g. sums up to 42)   │           \n           └────────────────────────────────┘           \n           ▲              ▲                 ▲           \n           │            <-│->               │           \n           │              │                 │           \n           │              │                 │           \n  ┌──────────────────┐    │                 │           \n  │ start-aggregated │    │                 │           \n  └──────────────────┘    │                 │           \n                          │                 │           \n                          │                 │           \n                          │         ┌──────────────────┐\n                          │         │  end-aggregated  │\n                          │         └──────────────────┘\n                          │                             \n            ┌─────────────┴─────────────┐               \n            │   e.g. start of day in    │               \n            │       Europe/Berlin       │               \n            │                           │               \n            └───────────────────────────┘               \n```\n"
+      },
+      "Metric": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The ID of the metric."
+          },
+          "scale": {
+            "type": "integer",
+            "description": "mistral can only process integers. So in case of floats or decimals this indicates the scale to multiply or divide the numbers before inserting or after querying."
+          },
+          "resolution": {
+            "nullable": false,
+            "$ref": "#/components/schemas/Resolution"
+          },
+          "drift": {
+            "$ref": "#/components/schemas/Drift"
+          },
+          "sources": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "description": "the unique id of the source",
+                  "type": "string"
+                },
+                "value": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "xattr": {
+            "type": "object",
+            "description": "arbitrary optional map of any kind of attributes."
+          },
+          "Source": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Type is an arbitrary id or name of to categorize the source."
+              },
+              "fields": {
+                "type": "object",
+                "description": "arbitrary map of key/values."
+              }
             }
           }
         }

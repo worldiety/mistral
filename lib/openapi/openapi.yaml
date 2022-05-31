@@ -67,6 +67,63 @@ tags:
       Mistral also provides a bunch of build-in and ready-to-use kernels, which cannot be modified and
       may be optimized and updated in future releases. These kernels are especially useful
       for basic inspection and data analysis tasks.
+      
+      Example for a MiEl compute kernel:
+      
+      ```go
+      package main
+
+      import (
+        "context"
+        miel "github.com/worldiety/mistral/lib/go/dsl/v1"
+      )
+
+      type Request struct {
+        Buckets []miel.UUID `json:"buckets"`
+        Metric  miel.UUID   `json:"metric"`
+        Range   miel.Range  `json:"range"`
+      }
+
+      type Response struct {
+        BucketNames []string    `json:"names"`
+        MetricName  string      `json:"metric"`
+        Data        miel.FGroup `json:"data"`
+      }
+
+      func Declare() (interface{}, interface{}) {
+        return Request{
+            Buckets: []miel.UUID{miel.NewUUID()},
+            Metric:  miel.NewUUID(),
+            Range:   "[2038-01-19 03:14:07,2038-01-19 03:14:07]@Europe/Berlin",
+          }, Response{
+            BucketNames: []string{"wind generator"},
+            MetricName:  "Windspeed in km/h",
+            Data:        miel.FGroup{miel.FPoints{miel.FPoint{X: 1648826693, Y: 3.14}}},
+          }
+      }
+
+      func Eval(ctx context.Context) {
+        var request Request
+        miel.Request(ctx, &request)
+
+        scale := miel.Query(ctx).ScaleOf(request.Metric)
+        width := miel.ViewportWidth(ctx)
+
+        miel.Query(ctx).
+          FindInRange(request.Buckets, request.Metric, request.Range.MustInterval()).
+          ForEachF(func(pts miel.Points) miel.FPoints {
+            return pts.Downscale(width).Unscale(scale)
+          })
+
+        miel.Response(ctx, Response{})
+      }
+
+      func main() {
+        miel.Configure().
+          Parameter(Declare).
+          Start(Eval)
+      }
+      ```
 
   - name: timeseries
     description: |
@@ -75,6 +132,12 @@ tags:
       All time series data within a bucket and metric is treated uniquely per time stamp, which should
       be represented as a Unix timestamp in seconds since Epoch, which is also expected by
       all [MiEl kernel functions](#tag/kernels).
+
+  - name: metrics
+    description: |
+      Resources of _metrics_ is a loosely coupled conventional meta data aggregation for details about metrics.
+      Time series data is shared per bucket and uniquely addressed using a metric id.
+      To commonly manage information about a specific metric id, these resource can be used.
       
 
 paths:
@@ -85,6 +148,9 @@ paths:
 
   /healthz:
     $ref: './v1/status/paths.yaml#/healthz'
+
+  /api/v1/metrics:
+    $ref: './v1/metrics/paths.yaml#/metrics'
 
   /api/v1/buckets:
     $ref: './v1/buckets/paths.yaml#/buckets'
