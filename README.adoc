@@ -1,3 +1,6 @@
+image:https://img.shields.io/badge/oai-redoc-blue[link=https://worldiety.github.io/mistral/redoc]
+image:https://img.shields.io/badge/oai-swagger-brightgreen[link=https://worldiety.github.io/mistral/swagger]
+
 = mistral
 
 mistral software development kit including examples and client bindings for different languages.
@@ -9,8 +12,7 @@ For your convenience, there is a link:tutorial/miel[MiEL starter tutorial].
 
 == OAS Specification
 
-You can find the documentation in link:lib/openapi/README.adoc[the openapi folder].
-See also the rendered https://worldiety.github.io/mistral[API documentation].
+You can find the documentation in link:lib/openapi[the openapi folder].
 
 == License
 
