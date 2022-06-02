@@ -42,7 +42,7 @@
     },
     {
       "name": "metrics",
-      "description": "Resources of _metrics_ is a loosely coupled conventional meta data aggregation for details about metrics.\nTime series data is shared per bucket and uniquely addressed using a metric id.\nTo commonly manage information about a specific metric id, these resource can be used.\n"
+      "description": "Resources of _metrics_ is a loosely coupled conventional meta data aggregation for details about metrics.\nTime series data is shared per bucket and uniquely addressed using a metric id.\nTo commonly manage information about a specific metric id, these resource can be used.\nTechnically, the metric meta data are separated from the actual time series data.\nEven though, they share the same identifiers, they have nothing in common and are only\nconventionally related. This also affects the transaction semantics: changing meta data\nare not propagated through the time series WAL. \nTherefore, the existence of meta data for metrics is not related to the existence of actual time series\ndata within a metric shard of a bucket.\nThe following rules of thumb are helpful:\n* create the metric meta data before importing any time series data, to ensure that a compute kernel has access to the defined meta data, especially like the scale.\n* do never change the semantics of a metric, especially if the way of sampling has changed. Create a new metric, otherwise computations will likely be wrong. \n"
     }
   ],
   "paths": {
@@ -82,8 +82,8 @@
         "tags": [
           "metrics"
         ],
-        "summary": "Returns the meta data for a metric.",
-        "description": "A metric may have additional meta data, like a name or information about the origin from which it has been imported.",
+        "summary": "Returns a list of all metrics.",
+        "description": "A metric may have additional meta data, like a name or information about the origin from which it has been imported.\n",
         "responses": {
           "200": {
             "description": "A Metric defines the nature of a time series. \nA _time series_ is defined as a series of key-value tuples, where the key is a unique Unix time stamp and the value is an integer.\nAll tuples are ordered ascending based on the time stamp.\nThe nature of a metric must be constant for all associated time series tuples over all time.\nTo programmatically decide, which kind of calculations are valid, a metric contains various meta information to describe what and how the value must be interpreted.\nA metric must be quantifiable and must have a unit.\nTypically, a metric is a _physical quantity_ or a business metric like a _key performance indicator_.\n",
@@ -99,16 +99,13 @@
             }
           },
           "400": {
-            "description": "Bad request is usually returned, if you have missing or wrong formatted parameter."
+            "$ref": "#/components/responses/C400"
           },
           "403": {
-            "description": "Invalid bearer token"
-          },
-          "404": {
-            "description": "Not found is returned, if no meta data exists. However the metric itself may exist for certain devices."
+            "$ref": "#/components/responses/C403"
           },
           "500": {
-            "description": "Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight."
+            "$ref": "#/components/responses/C500"
           }
         }
       }
@@ -338,7 +335,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A PointStream is like a JSON array of points, but actually it is not JSON.\nInstead it uses a newline delimited json object encoding, as described by https://github.com/ndjson/ndjson-spec.\nServer and client implementations are encouraged to use a chunked encoding to avoid full buffering, so\nexpect that your implementation should parse and process until _EOF_ (end of file).\n\n```json\n{\"x\": 1653988963, \"y\": 42}\\n\n{\"x\": 1653988964, \"y\": 43}\\n\n{\"x\": 1653988965, \"y\": 44}\\n\n```\n",
+            "description": "A PointStream is like a JSON array of points, but actually it is not JSON.\nInstead it uses a newline delimited json object encoding, as described by https://github.com/ndjson/ndjson-spec.\nServer and client implementations are encouraged to use a chunked encoding to avoid full buffering, so\nexpect that your implementation should parse and process until _EOF_ (end of file).\n\n```json\n{\"x\": 1653988963, \"y\": 42}\\n\n{\"x\": 1653988964, \"y\": 43}\\n\n{\"x\": 1653988965, \"y\": 44}\\n\n```\n\n_Tip: Avoid consuming point streams and instead use the [kernels API](#tag/kernels) for processing, which are\nmultiple orders of magnitudes faster. Remember, that even a laptop processor can reach a memory bandwidth of 800GB/s but a 10GBit\nLAN can only provide 1,2GB/s plus cycles and bandwidth for serialization and deserialization._\n",
             "content": {
               "application/x-ndjson": {
                 "schema": {
@@ -477,7 +474,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "A PointStream is like a JSON array of points, but actually it is not JSON.\nInstead it uses a newline delimited json object encoding, as described by https://github.com/ndjson/ndjson-spec.\nServer and client implementations are encouraged to use a chunked encoding to avoid full buffering, so\nexpect that your implementation should parse and process until _EOF_ (end of file).\n\n```json\n{\"x\": 1653988963, \"y\": 42}\\n\n{\"x\": 1653988964, \"y\": 43}\\n\n{\"x\": 1653988965, \"y\": 44}\\n\n```\n",
+          "description": "A PointStream is like a JSON array of points, but actually it is not JSON.\nInstead it uses a newline delimited json object encoding, as described by https://github.com/ndjson/ndjson-spec.\nServer and client implementations are encouraged to use a chunked encoding to avoid full buffering, so\nexpect that your implementation should parse and process until _EOF_ (end of file).\n\n```json\n{\"x\": 1653988963, \"y\": 42}\\n\n{\"x\": 1653988964, \"y\": 43}\\n\n{\"x\": 1653988965, \"y\": 44}\\n\n```\n\n_Tip: Avoid consuming point streams and instead use the [kernels API](#tag/kernels) for processing, which are\nmultiple orders of magnitudes faster. Remember, that even a laptop processor can reach a memory bandwidth of 800GB/s but a 10GBit\nLAN can only provide 1,2GB/s plus cycles and bandwidth for serialization and deserialization._\n",
           "content": {
             "application/x-ndjson": {
               "schema": {
@@ -1249,7 +1246,7 @@
                   "levelBegin",
                   "levelEnd"
                 ],
-                "description": "The sampling describes how the combination of a key-value has been measured.\nThe following five types have been defined:\n\n## periodStart & periodEnd\nThe most natural kind is a period, where a sensor has created a bunch of samples over time.\nAt the end, there is always an aggregation involved, to return an associated single value.\n_periodStart_ defines, that the timestamp represents the beginning of the measurement.\n_periodEnd_ defines, that the timestamp represents the end of the measurement.\n\n\n```\n        0s                              600s          \n  ─────────┬────────────────────────────────┬───────▶   \n           │ aggregation period (e.g. 600s) │           \n           │   value (e.g. sums up to 42)   │           \n           └────────────────────────────────┘           \n           ▲              ▲                 ▲           \n           │            <-│->               │           \n           │              │                 │           \n           │              │                 │           \n  ┌──────────────────┐    │                 │           \n  │ start-aggregated │    │                 │           \n  └──────────────────┘    │                 │           \n                          │                 │           \n                          │                 │           \n                          │         ┌──────────────────┐\n                          │         │  end-aggregated  │\n                          │         └──────────────────┘\n                          │                             \n            ┌─────────────┴─────────────┐               \n            │   e.g. start of day in    │               \n            │     Australia/Eucla       │               \n            │                           │               \n            └───────────────────────────┘               \n```\n\n## instant\nAlthough, technically there is always a sampling period involved to capture a measurement, an instant pretends \nthat there is no relevant aggregation to represent.\nMathematically, this means, that the value has been captured within an infinite small amount of time in \nexact that moment.\n\n## levelBegin & levelEnd\nLevel defines a state of the value, which describes a system until the next time indexed value.\n_levelBegin_ defines that the value is valid since (inclusive) the timestamp until the next timestamp is found.\n_levelEnd_ defines that the value is valid until (inclusive) the timestamp. For any time until the first preceeding\ntimestamp, the value is valid.\n\n```\n                      │                       \n                      │                       \n                      │                       \n                      │                       \n ──────────────────   │   ─────────────────── \n ▲ ───────────▶       │         ◀───────────▲ \n │                    │                     │ \n │                    │                     │ \n │                    │                     │ \n ┌──────────────────┐ │   ┌──────────────────┐\n │   level begin    │ │   │    level end     │\n └──────────────────┘ │   └──────────────────┘\n                      │                       \n                      │                       \n                      │                       \n```\n"
+                "description": "The sampling describes how the combination of a key-value has been measured.\nThe following five types have been defined:\n\n## periodStart & periodEnd\nThe most natural kind is a period, where a sensor has created a bunch of samples over time.\nAt the end, there is always an aggregation involved, to return an associated single value.\n_periodStart_ defines, that the timestamp represents the beginning of the measurement.\n_periodEnd_ defines, that the timestamp represents the end of the measurement.\n\n\n```\n        0s                              600s          \n  ─────────┬────────────────────────────────┬───────▶   \n           │ aggregation period (e.g. 600s) │           \n           │   value (e.g. sums up to 42)   │           \n           └────────────────────────────────┘           \n           ▲              ▲                 ▲           \n           │            <-│->               │           \n           │              │                 │           \n           │              │                 │           \n  ┌──────────────────┐    │                 │           \n  │ start-aggregated │    │                 │           \n  └──────────────────┘    │                 │           \n                          │                 │           \n                          │                 │           \n                          │         ┌──────────────────┐\n                          │         │  end-aggregated  │\n                          │         └──────────────────┘\n                          │                             \n            ┌─────────────┴─────────────┐               \n            │   e.g. start of day in    │               \n            │     Australia/Eucla       │               \n            │                           │               \n            └───────────────────────────┘               \n```\n\n## instant\nAlthough technically there is always a sampling period involved to capture a measurement, an instant pretends \nthat there is no relevant aggregation to represent.\nMathematically, this means, that the value has been captured within an infinite small amount of time in \nexact that moment.\n\n## levelBegin & levelEnd\nLevel defines a state of the value, which describes a system until the next time indexed value.\n_levelBegin_ defines that the value is valid since (inclusive) the timestamp until the next timestamp is found.\n_levelEnd_ defines that the value is valid until (inclusive) the timestamp for any time until the first preceeding\ntimestamp, the value is valid.\n\n```\n                      │                       \n                      │                       \n                      │                       \n                      │                       \n ──────────────────   │   ─────────────────── \n ▲ ───────────▶       │         ◀───────────▲ \n │                    │                     │ \n │                    │                     │ \n │                    │                     │ \n ┌──────────────────┐ │   ┌──────────────────┐\n │   level begin    │ │   │    level end     │\n └──────────────────┘ │   └──────────────────┘\n                      │                       \n                      │                       \n                      │                       \n```\n"
               },
               "period": {
                 "nullable": false,
@@ -1258,6 +1255,8 @@
             }
           },
           "sources": {
+            "deprecated": true,
+            "description": "Contains arbitrary key-object mappings to attach unspecified meta data to match these against\nthird party data sources. Actually _xattr_ is the same.\n",
             "type": "object",
             "additionalProperties": {
               "type": "object",
@@ -1274,20 +1273,7 @@
           },
           "xattr": {
             "type": "object",
-            "description": "arbitrary optional map of any kind of attributes."
-          },
-          "Source": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "description": "Type is an arbitrary id or name of to categorize the source."
-              },
-              "fields": {
-                "type": "object",
-                "description": "arbitrary map of key/values."
-              }
-            }
+            "description": "Arbitrary optional map of any kind of attributes.\nThis data holder can be used, to attach external or internal meta data to improve data interoperability\nor synchronizations.\nMistral never evaluates this and custom kernels should not do that either.\n"
           }
         }
       },
@@ -1414,7 +1400,7 @@
       },
       "PointStream": {
         "type": "object",
-        "description": "A PointStream is like a JSON array of points, but actually it is not JSON.\nInstead it uses a newline delimited json object encoding, as described by https://github.com/ndjson/ndjson-spec.\nServer and client implementations are encouraged to use a chunked encoding to avoid full buffering, so\nexpect that your implementation should parse and process until _EOF_ (end of file).\n\n```json\n{\"x\": 1653988963, \"y\": 42}\\n\n{\"x\": 1653988964, \"y\": 43}\\n\n{\"x\": 1653988965, \"y\": 44}\\n\n```\n",
+        "description": "A PointStream is like a JSON array of points, but actually it is not JSON.\nInstead it uses a newline delimited json object encoding, as described by https://github.com/ndjson/ndjson-spec.\nServer and client implementations are encouraged to use a chunked encoding to avoid full buffering, so\nexpect that your implementation should parse and process until _EOF_ (end of file).\n\n```json\n{\"x\": 1653988963, \"y\": 42}\\n\n{\"x\": 1653988964, \"y\": 43}\\n\n{\"x\": 1653988965, \"y\": 44}\\n\n```\n\n_Tip: Avoid consuming point streams and instead use the [kernels API](#tag/kernels) for processing, which are\nmultiple orders of magnitudes faster. Remember, that even a laptop processor can reach a memory bandwidth of 800GB/s but a 10GBit\nLAN can only provide 1,2GB/s plus cycles and bandwidth for serialization and deserialization._\n",
         "example": "{\"x\": 1653988963, \"y\": 42}\n\n{\"x\": 1653988964, \"y\": 43}\n\n{\"x\": 1653988965, \"y\": 44}\n",
         "properties": {
           "x": {

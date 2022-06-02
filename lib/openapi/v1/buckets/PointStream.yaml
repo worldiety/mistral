@@ -10,6 +10,10 @@ description: |
   {"x": 1653988964, "y": 43}\n
   {"x": 1653988965, "y": 44}\n
   ```
+  
+  _Tip: Avoid consuming point streams and instead use the [kernels API](#tag/kernels) for processing, which are
+  multiple orders of magnitudes faster. Remember, that even a laptop processor can reach a memory bandwidth of 800GB/s but a 10GBit
+  LAN can only provide 1,2GB/s plus cycles and bandwidth for serialization and deserialization._
 example: |
   {"x": 1653988963, "y": 42}
   

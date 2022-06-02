@@ -5,8 +5,10 @@ metrics:
       - bearerAuth: [ ]
     tags:
       - metrics
-    summary: Returns the meta data for a metric.
-    description: A metric may have additional meta data, like a name or information about the origin from which it has been imported.
+    summary: Returns a list of all metrics.
+    description: |
+      A metric may have additional meta data, like a name or information about the origin from which it has been imported.
+
 
     responses:
       '200':
@@ -18,11 +20,9 @@ metrics:
               type: array
               items:
                 $ref: "./Metric.yaml"
-      '403':
-        description: 'Invalid bearer token'
       '400':
-        description: 'Bad request is usually returned, if you have missing or wrong formatted parameter.'
-      '404':
-        description: 'Not found is returned, if no meta data exists. However the metric itself may exist for certain devices.'
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
       '500':
-        description: 'Internal Server Error is usually returned, if something went wrong at the server side. If this problem persists, you should contact the support, to get more insight.'
+        $ref: '../errors/C500.yaml'

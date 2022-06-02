@@ -105,7 +105,7 @@ properties:
           ```
           
           ## instant
-          Although, technically there is always a sampling period involved to capture a measurement, an instant pretends 
+          Although technically there is always a sampling period involved to capture a measurement, an instant pretends 
           that there is no relevant aggregation to represent.
           Mathematically, this means, that the value has been captured within an infinite small amount of time in 
           exact that moment.
@@ -113,7 +113,7 @@ properties:
           ## levelBegin & levelEnd
           Level defines a state of the value, which describes a system until the next time indexed value.
           _levelBegin_ defines that the value is valid since (inclusive) the timestamp until the next timestamp is found.
-          _levelEnd_ defines that the value is valid until (inclusive) the timestamp. For any time until the first preceeding
+          _levelEnd_ defines that the value is valid until (inclusive) the timestamp for any time until the first preceeding
           timestamp, the value is valid.
 
           ```
@@ -140,6 +140,10 @@ properties:
         $ref: '../time/Period.yaml'
 
   sources:
+    deprecated: true
+    description: |
+      Contains arbitrary key-object mappings to attach unspecified meta data to match these against
+      third party data sources. Actually _xattr_ is the same.
     type: object
     additionalProperties:
       type: object
@@ -154,14 +158,8 @@ properties:
 
   xattr:
     type: object
-    description: arbitrary optional map of any kind of attributes.
-
-  Source:
-    type: object
-    properties:
-      type:
-        type: string
-        description: Type is an arbitrary id or name of to categorize the source.
-      fields:
-        type: object
-        description: arbitrary map of key/values.
+    description: |
+      Arbitrary optional map of any kind of attributes.
+      This data holder can be used, to attach external or internal meta data to improve data interoperability
+      or synchronizations.
+      Mistral never evaluates this and custom kernels should not do that either.

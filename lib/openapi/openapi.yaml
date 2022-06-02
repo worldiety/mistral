@@ -138,7 +138,15 @@ tags:
       Resources of _metrics_ is a loosely coupled conventional meta data aggregation for details about metrics.
       Time series data is shared per bucket and uniquely addressed using a metric id.
       To commonly manage information about a specific metric id, these resource can be used.
-      
+      Technically, the metric meta data are separated from the actual time series data.
+      Even though, they share the same identifiers, they have nothing in common and are only
+      conventionally related. This also affects the transaction semantics: changing meta data
+      are not propagated through the time series WAL. 
+      Therefore, the existence of meta data for metrics is not related to the existence of actual time series
+      data within a metric shard of a bucket.
+      The following rules of thumb are helpful:
+      * create the metric meta data before importing any time series data, to ensure that a compute kernel has access to the defined meta data, especially like the scale.
+      * do never change the semantics of a metric, especially if the way of sampling has changed. Create a new metric, otherwise computations will likely be wrong. 
 
 paths:
 
