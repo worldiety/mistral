@@ -1,17 +1,144 @@
 type: object
+description: |
+  A Metric defines the nature of a time series. 
+  A _time series_ is defined as a series of key-value tuples, where the key is a unique Unix time stamp and the value is an integer.
+  All tuples are ordered ascending based on the time stamp.
+  The nature of a metric must be constant for all associated time series tuples over all time.
+  To programmatically decide, which kind of calculations are valid, a metric contains various meta information to describe what and how the value must be interpreted.
+  A metric must be quantifiable and must have a unit.
+  Typically, a metric is a _physical quantity_ or a business metric like a _key performance indicator_.
+
+
 properties:
   id:
     type: string
     format: uuid
     description: The ID of the metric.
-  scale:
-    type: integer
-    description: mistral can only process integers. So in case of floats or decimals this indicates the scale to multiply or divide the numbers before inserting or after querying.
-  resolution:
-    nullable: false
-    $ref: '../time/Resolution.yaml'
-  drift:
-    $ref: '../time/Drift.yaml'
+
+  key:
+    type: object
+    properties:
+      type:
+        type: string
+        enum: [ timestamp ]
+        description: |
+          The engine has been optimized to process equidistant timestamps.
+          However, arbitrary 64 bit keys can be processed but will degrade performance and efficiency seriously. 
+          The worst case scenario is to store random numbers.
+          All build-in functions expect a timestamp anyway.
+
+      unit:
+        type: string
+        enum: [ seconds ]
+        description: |
+          The unit of the key must be in _seconds_. 
+          Although, the storage engine supports just a 64 bit signed integer, all build-in time-based pipeline functions
+          expect a second precision.
+
+
+  value:
+    type: object
+    properties:
+      unit:
+        type: string
+        description: |
+          The unit of the value. This is nearly arbitrary and is usually derived from physical base units.
+          Typical examples are kWh, rpm or km/h.
+      aggregation:
+        type: string
+        enum: [ max, min, avg, sum, none, other ]
+        description:
+          A data aggregation takes a bunch of values and applies a non-inverse function on it.
+          This always means that there is a loss of information.
+          For example, the typical 10 minute or 15 minute values have been probably aggregated
+          from a much faster source, like a 16kHz oscilloscope sampling.
+      scale:
+        type: integer
+        format: int64
+        description: |
+          mistral can only process integers. 
+          So in case of floats or decimals this indicates the scale to divide or multiply the numbers before inserting or after querying.
+          This always has to be done explicitly to match the actual defined _unit_.
+
+  sampling:
+    type: object
+    properties:
+
+      type:
+        type: string
+        enum: [ periodStart, periodEnd, instant, levelBegin, levelEnd ]
+        description: |
+          The sampling describes how the combination of a key-value has been measured.
+          The following five types have been defined:
+          
+          ## periodStart & periodEnd
+          The most natural kind is a period, where a sensor has created a bunch of samples over time.
+          At the end, there is always an aggregation involved, to return an associated single value.
+          _periodStart_ defines, that the timestamp represents the beginning of the measurement.
+          _periodEnd_ defines, that the timestamp represents the end of the measurement.
+          
+          
+          ```
+                  0s                              600s          
+            ─────────┬────────────────────────────────┬───────▶   
+                     │ aggregation period (e.g. 600s) │           
+                     │   value (e.g. sums up to 42)   │           
+                     └────────────────────────────────┘           
+                     ▲              ▲                 ▲           
+                     │            <-│->               │           
+                     │              │                 │           
+                     │              │                 │           
+            ┌──────────────────┐    │                 │           
+            │ start-aggregated │    │                 │           
+            └──────────────────┘    │                 │           
+                                    │                 │           
+                                    │                 │           
+                                    │         ┌──────────────────┐
+                                    │         │  end-aggregated  │
+                                    │         └──────────────────┘
+                                    │                             
+                      ┌─────────────┴─────────────┐               
+                      │   e.g. start of day in    │               
+                      │     Australia/Eucla       │               
+                      │                           │               
+                      └───────────────────────────┘               
+          ```
+          
+          ## instant
+          Although, technically there is always a sampling period involved to capture a measurement, an instant pretends 
+          that there is no relevant aggregation to represent.
+          Mathematically, this means, that the value has been captured within an infinite small amount of time in 
+          exact that moment.
+          
+          ## levelBegin & levelEnd
+          Level defines a state of the value, which describes a system until the next time indexed value.
+          _levelBegin_ defines that the value is valid since (inclusive) the timestamp until the next timestamp is found.
+          _levelEnd_ defines that the value is valid until (inclusive) the timestamp. For any time until the first preceeding
+          timestamp, the value is valid.
+
+          ```
+                                │                       
+                                │                       
+                                │                       
+                                │                       
+           ──────────────────   │   ─────────────────── 
+           ▲ ───────────▶       │         ◀───────────▲ 
+           │                    │                     │ 
+           │                    │                     │ 
+           │                    │                     │ 
+           ┌──────────────────┐ │   ┌──────────────────┐
+           │   level begin    │ │   │    level end     │
+           └──────────────────┘ │   └──────────────────┘
+                                │                       
+                                │                       
+                                │                       
+          ```
+      
+
+      period:
+        nullable: false
+        $ref: '../time/Period.yaml'
+
   sources:
     type: object
     additionalProperties:
@@ -22,6 +149,7 @@ properties:
           type: string
         value:
           type: object
+
 
 
   xattr:

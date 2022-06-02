@@ -10,7 +10,8 @@ metrics:
 
     responses:
       '200':
-        description: Returns the meta data.
+        description:
+          $ref: ./Metric.yaml#/description
         content:
           application/json:
             schema:
