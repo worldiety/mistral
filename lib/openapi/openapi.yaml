@@ -3,7 +3,90 @@ info:
   title: worldiety mistral
   version: 1.20.0
   description: |
-    *mistral* is a very specialized database powered by *worldiety* which supports the storage and retrieval of time based sensor metrics for devices. It scales quite well for billions of values on a single node.
+    *mistral* is a very specialized database powered by *worldiety* which supports the storage and retrieval of time 
+    based sensor metrics for devices. 
+    It scales quite well for billions of values on a single node.
+    
+    ## FAQ
+    
+    ### What is a timestamp?
+    Mistral expects that all time series keys represent a 64bit signed UTC timestamp in seconds since Epoch 1970.
+    Intentionally, neither a single timestamp nor an entire time series carries information about time zones or UTC offsets.
+    Time zones become only relevant for certain use cases and are not required for general purpose.
+    Mistral expects that a time zone is a question of presentation and is either defined by the location
+    of a physical data source (e.g. a wind generator) or a legal (and physical) accounting location.
+    
+    ### Why is there no ISO 8601 or RFC 3339 support?
+    Both standards cannot express time zones.
+    What they represent is a relation between a local time and an offset to the UTC.
+    Therefore, one cannot use these standards to perform certain data aggregations, because _random_ offsets like 
+    daylight saving times cannot be calculated from that offset.
+    Even worse, they are not intuitive and humans get it often wrong.
+    
+    > Example: What is the _difference_ between `2019-10-12T07:20:50.52Z` and `2019-10-12T14:20:50.52+07:00`?
+    
+    ### What is a time zone?
+    We refer to the proceedings of the RFC 6557 which defines, how the IANA time zones are maintained.
+    A time zone is defined as a `area/location` tuple, which refers to a unique physical region in history or in present.
+    This is a defacto standard and has been accepted by all major operating systems.
+    It contains rules about historic and current offsets between the UTC and the locations offset or daylight saving times.
+    Currently, there are nearly 600 regions (including links) with individual rules defined.
+    Strictly speaking, the special area _Etc_ is artificial and does not refer to a distinct location and we do not consider
+    that a real time zone. 
+    Hence, usage of _Etc_ is discouraged and implementations are allowed to reject processing.
+    
+    > Example: `America/New_York` or `Europe/Berlin`.
+    
+    ### Why is there no native float support?
+    Floating point values suggest a high accuracy, but mostly they are not. 
+    Due to the nature of sensors, the sampled measurement values are discrete and _exact_ (in a way).
+    
+    > Example: A Sensirion SHTC3 temperature sensor uses only 2 bytes to quantize its measurements. Also this is even
+      well beyond its actual accuracy and already contains a lot of noise. 
+    
+    What is worse, floats introduce a lot of noise to numbers alone which otherwise must be calculated in a lossless
+    way. 
+    When aggregating sums over millions or even billions of values, these tiny errors add up and makes explanations hard,
+    especially if a sum represents a production amount which has a 1:1 relation to money - and nobody wants floats
+    in their banking accounts.
+    
+    > Example: `0.1` is actually `0.100000001490116119384765625` in IEEE-754.
+    
+    Also, this noise makes efficient compression a tough task.
+    Therefore, mistral does not support storing floats and expects pre-scaled values so that values can be expressed
+    using integers. 
+    However, using a compute kernel, one can post-scale those integers for display purposes.
+    
+    ### Why is there no CSV export?
+    CSV is not suited as a reliable data exchange format.
+    End users often create documents with different order and naming of columns.
+    Also, things like the encoding (e.g. unicode BOM) or just the serialization of floating point values are not specified.
+    It is not in the scope of mistral, to support and maintain these kinds of compatibility problems.
+
+    ### How do I store time stamp related meta data like OPC quality?
+    Due to indexing and speed concerns, a time series point is always a tuple of two distinct 64 bit signed integer
+    values (16 byte in total). Therefore, additional meta data cannot be attached directly.
+    However, to store meta data like OPC quality, best practice in mistral is to create an additional time series, which
+    contains the associated quality codes.
+    
+    > Example: An OPC DA Quality Code can be expressed using a 2 byte integer. Things like different _Bad_, _Uncertain_
+    or _Good_ measurements can be expressed.
+
+    Tip: Always store related time series within a single bucket to ensure atomic data consistency.
+    
+    ### Which kind of database is used?
+    Time series data is indexed, compressed and stored in a custom format.
+    The write ahead log (WAL) is kept in memory until flushed either by a request or due to a time interval (default 1 hour).
+    When flushing, the log data is merged into the already persisted data set and optimized for reading, which
+    characterizes the implementation as a log-structured merge tree. 
+    Merging happens atomically (ACID) per bucket and is safe as far as a correct _fsync_ implementation is provided.
+    On a crash, the in-memory WAL is lost and must be recovered by the middleware.
+    
+    > Warning: Use enterprise grade SSD drives and a filesystem with proper fsync support. Mistral is optimized for
+    batch-insertion and read-heavy workloads and trades performance versus consistency using the WAL. The middleware must
+    be properly tuned to trade available server resources, required eventual consistency windows and query performance.
+    
+    Meta data is stored differently, using a separate transactional key-value store.
 
   license:
     name: worldiety Enterprise Edition (EE) Lizenz (die "EE Lizenz")
