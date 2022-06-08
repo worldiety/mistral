@@ -69,7 +69,7 @@ info:
     using integers. 
     However, using a compute kernel, one can post-scale those integers for display purposes.
     
-    ### Why is there no CSV export?
+    ### Why is there no CSV import or export?
     CSV is not suited as a reliable data exchange format.
     End users often create documents with different order and naming of columns.
     Also, things like the encoding (e.g. unicode BOM) or just the serialization of floating point values are not specified.
@@ -93,6 +93,33 @@ info:
     a scale of 10^7 which already allows a single digit centimeter resolution. 
     
     > Tip: Do not represent floats as IEEE 754 binary integer representation, to avoid processing signal noise. 
+    
+    Keep in mind, that most GPS location data e.g. from smartphones have an effective resolution of multiple meters.
+    
+    ### How do I store multiple values per time stamp?
+    Technically there are no reasons, why the storage engine could not handle multiple time stamps,
+    however we decided to not support them. When applying the WAL, the values of existing time stamps
+    are updated in the appended order. 
+    A time series is a strict functional mapping, which means having unique index values.
+    Allowing otherwise, would result in a lot of questions with unclear answers: Which order
+    do these multiple timestamps have? When aggregating, which and how are multiple values handled? 
+    Is the semantic of all values the same? When creating a relation to other time series, which timestamp
+    should be the foreign key?
+    
+    > Tip: If you have a time series and want to fix time stamps and have a later comparison between those
+    values (e.g. for machine learning), create a unique time series for each evolution cycle. 
+    Then, you can easily process them using the group or translate functions.
+    
+    ### How can I correct data?
+    As long as the timestamp is correct, you can simply write the new points into the according bucket endpoint.
+    If the timestamps are not correct, you have to remove points by using a range expression.
+    Afterwards, you can insert new points as usual.
+    Even though this is handled through the WAL, one cannot express atomicity in combination.
+    However, your middleware can narrow this by flushing the bucket first, submitting the changes into the WAL
+    within the specified interval and flush (or just wait) afterwards.
+    
+    > Note: The primary goal of Mistral is performance, also traded in by eventual consistency.
+    A read-after write consistency or an explicit transaction mechanism are non-goals.
     
     ### Which kind of database is used?
     Time series data is indexed, compressed and stored in a custom format.
@@ -121,7 +148,14 @@ info:
     which usually requires to return mostly a few hundred tuples and a normal JSON object is just fine for that.
     
 
+    ### What hardware to use?
+    This cannot be answered in a general way and depends on the dataset, the kind of queries and the amount parallel users.
+    There are use cases where you can aggregate billions of values on the cheapest cloud server and there are also
+    use cases where even the largest machine is not enough.
     
+    > Tip: Feel free to [contact us](https://www.worldiety.de/produkte/mistral) and we will try to assess your needs and help you with appropriate benchmarks if necessary.
+    
+    For evaluation, starting with a 16 core processor, 64GB Ram and a 512GB nvme-SSD should be fine.
 
   license:
     name: worldiety Enterprise Edition (EE) Lizenz (die "EE Lizenz")
