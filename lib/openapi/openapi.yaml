@@ -37,6 +37,18 @@ info:
     
     > Example: `America/New_York` or `Europe/Berlin`.
     
+    ### How is an aggregation handled on daylight saving time?
+    The time series points do not carry any time zone information and are just the Unix time stamps (UTC seconds).
+    However, when aggregating a range and a time zone must be specified.
+    
+    > Example: `(2038-01-19 03:14:07,2038-01-19 03:14:07]@Europe/Berlin`. Here, _from_ is exclusive and _to_ is inclusive, time zone is Berlin.
+    
+    When using the build-in aggregate functions, you can define an additional _drift_ value to respect start- or end-aggregated
+    values before applying the according time zone offsets. Using this _drift_ one can shift the value in a way, so that
+    they fall in or out of a certain year, month or day interval.
+    As a consequence, depending on the time zone, a day may contain 23 hours or 25 hours when switching between daylight saving 
+    times, which is intentional.
+    
     ### Why is there no native float support?
     Floating point values suggest a high accuracy, but mostly they are not. 
     Due to the nature of sensors, the sampled measurement values are discrete and _exact_ (in a way).
@@ -74,6 +86,14 @@ info:
 
     Tip: Always store related time series within a single bucket to ensure atomic data consistency.
     
+    ### How do I store latitude/longitude data for each time series point?
+    Similar to _OPC quality_, such data can only be stored within a different time series.
+    Additionally, latitude and longitude values are naturally double values.
+    Just as discussed in _Why is there no native float support?_, you can simply scale the coordinates, e.g. using
+    a scale of 10^7 which already allows a single digit centimeter resolution. 
+    
+    > Tip: Do not represent floats as IEEE 754 binary integer representation, to avoid processing signal noise. 
+    
     ### Which kind of database is used?
     Time series data is indexed, compressed and stored in a custom format.
     The write ahead log (WAL) is kept in memory until flushed either by a request or due to a time interval (default 1 hour).
@@ -87,6 +107,21 @@ info:
     be properly tuned to trade available server resources, required eventual consistency windows and query performance.
     
     Meta data is stored differently, using a separate transactional key-value store.
+
+    
+    ### Why newline delimited json (NDJSON)?
+    Intentionally, the json format is not generally suited to be written or read partially - especially arrays, which
+    needs grammatically balanced brackets.
+    There is no common standard and there are a lot of variations in the industry to solve this in different ways.
+    Probably one of the most common solutions which is well known in the area of structured logging, is to write a minified
+    json object per line. 
+    To formalize this, we refer to the [NDJSON specification](https://github.com/ndjson/ndjson-spec) and follow this approach
+    for raw time series data tuples.
+    This format should not be used by compute kernels, because these are intended to reduce and prepare data for visualization,
+    which usually requires to return mostly a few hundred tuples and a normal JSON object is just fine for that.
+    
+
+    
 
   license:
     name: worldiety Enterprise Edition (EE) Lizenz (die "EE Lizenz")
