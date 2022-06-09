@@ -135,6 +135,71 @@ info:
     
     Meta data is stored differently, using a separate transactional key-value store.
 
+    ### How is the time series data organized?
+    A bucket defines a namespace in which multiple time series can be stored.
+    Changes are captured within an in-memory write ahead log (WAL).
+    Technically, a bucket is always consistent and ACID semantics are guaranteed when applying or merging the WAL.
+    As a consequence, ACID semantics are not applied for appending to the WAL itself, which is why the mistral
+    database should be considered as eventual consistent, especially there is no general read-after-write consistency. 
+    Currently, the default commit interval is 1 hour (configurable) and the WAL is not persistent.
+    To mitigate data loss, a middleware can either provide a resumeable workflow or enforce merging the WAL by using the _x-flush_ flag.
+    
+    > Tip: As best practice, represent each data source (like a wind generator) as a bucket. 
+    Create a UUID within your middleware to address your device and use this ID to identify the according bucket.
+    
+    A time series is basically a sorted list of 64-bit integer XY-points where the _x_-value represents the unique primary key in
+    UTC seconds.
+    A time series itself is also identified using a UUID, which must be unique within a bucket.
+    Conventionally, different time series sharing the same semantics across different buckets, should always
+    be addressed by the same ID.
+    
+    > Tip: As best practice, all time series using the same semantics like _production in kWh_ should be
+    addressed by the same ID across all buckets (e.g. different wind generators).
+    
+    Also conventionally, a Descriptor can be saved within the meta data storage of mistral, which
+    is used to define certain aspects of a time series.
+    Usually this descriptor is created first, before any actual time series data is written and its semantics
+    must not change - most importantly the scale must be constant over the entire lifetime.
+    Because of this write-once-read-many characteristics, these meta data are stored within a different 
+    storage implementation and are not coupled with any bucket (or actual time series).
+    
+    > Tip: Define and create a Descriptor for a time series before actually inserting the first time series point
+    into any bucket.
+    
+    ### Commit window and possibilities of data loss
+    To optimize performance, the WAL is kept in memory. On the other hand this increases the possibilities of 
+    data loss for unwritten WAL entries in case of a server outage. 
+    The default commit interval of 1 hour means to loose at most the last six 10min values per bucket.
+    Therefore, it is recommend that your middleware has a resume functionality to replay the last few critical write
+    operations. 
+    In practice, this is not a problem, because typical data sources already provide a history of the last aggregated
+    time series samples anyway and if not, you can still fallback to the (inefficient) _x-flush_ flag to enforce
+    immediate consistency per bucket.
+    
+    > Tip: When running within a docker container, ensure that the shutdown timeout interval matches your WAL size
+    and machine performance. Consider a larger timeout like 5 minutes or larger, to mitigate data loss on regular 
+    shutdowns. Mistral is highly concurrent and immediately profits from faster SSDs.
+    
+    Mistral guarantees (as long as the operating system, the file system and the hardware are sane), that
+    a WAL merge never corrupts a bucket. 
+    Hence, Mistral is always consistent, either you end up with the state before applying the WAL or with
+    the state after applying the WAL. 
+
+    > Note: we are evaluating a persistent WAL which lowers the risk of data loss by trading IOPS and throughput.
+    
+    By default, Mistral calculates and checks the consistency of the entire dataset by validating all data points
+    using a cryptographic hash sum (sha256, FIPS 180-4) at startup time. This may take quite a few minutes but can be disabled, however
+    it verifies that there was no silent data corruption.
+    
+    ### What platforms are supported?
+    We recommend a current Linux and a reliable file system you trust, e.g. a current 
+    Ubuntu LTS distribution and the latest Ext filesystem (tier 1). 
+    MacOS is only supported for evaluation and development purposes and must not be used in production (tier 2). 
+    Currently, Windows and 32bit platforms are unsupported.
+    
+    > Tip: Feel free to [contact us](https://www.worldiety.de/produkte/mistral) and we will try to assess your 
+    needs and may introduce new supported platforms.
+    
     
     ### Why newline delimited json (NDJSON)?
     Intentionally, the json format is not generally suited to be written or read partially - especially arrays, which
@@ -285,9 +350,10 @@ tags:
       be represented as a Unix timestamp in seconds since Epoch, which is also expected by
       all [MiEl kernel functions](#tag/kernels).
 
-  - name: metrics
+  - name: descriptors
     description: |
-      Resources of _metrics_ is a loosely coupled conventional meta data aggregation for details about metrics.
+      Resources of _descriptors_ contain bucket-wide meta data identified by the ID of a time series.
+      
       Time series data is shared per bucket and uniquely addressed using a metric id.
       To commonly manage information about a specific metric id, these resource can be used.
       Technically, the metric meta data are separated from the actual time series data.
@@ -310,7 +376,7 @@ paths:
     $ref: './v1/status/paths.yaml#/healthz'
 
   /api/v1/metrics:
-    $ref: './v1/metrics/paths.yaml#/metrics'
+    $ref: './v1/descriptor/paths.yaml#/metrics'
 
   /api/v1/buckets:
     $ref: './v1/buckets/paths.yaml#/buckets'

@@ -13,13 +13,13 @@ metrics:
     responses:
       '200':
         description:
-          $ref: ./Metric.yaml#/description
+          $ref: ./Descriptor.yaml#/description
         content:
           application/json:
             schema:
               type: array
               items:
-                $ref: "./Metric.yaml"
+                $ref: "./Descriptor.yaml"
       '400':
         $ref: '../errors/C400.yaml'
       '403':
