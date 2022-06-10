@@ -1,19 +1,19 @@
 type: object
 description: |
-  A Metric defines the nature of a time series. 
+  A Descriptor defines the nature of a time series. 
   A _time series_ is defined as a series of key-value tuples, where the key is a unique Unix time stamp and the value is an integer.
   All tuples are ordered ascending based on the time stamp.
-  The nature of a metric must be constant for all associated time series tuples over all time.
-  To programmatically decide, which kind of calculations are valid, a metric contains various meta information to describe what and how the value must be interpreted.
-  A metric must be quantifiable and must have a unit.
-  Typically, a metric is a _physical quantity_ or a business metric like a _key performance indicator_.
+  The nature of a Descriptor must be constant for all associated time series tuples over all time.
+  To programmatically decide, which kind of calculations are valid, a Descriptor contains various meta information to describe what and how the value must be interpreted.
+  A Descriptor must be quantifiable and must have a unit.
+  Typically, a Descriptor is a _physical quantity_ or a business Descriptor like a _key performance indicator_.
 
 
 properties:
   id:
     type: string
     format: uuid
-    description: The ID of the metric.
+    description: The ID of the Descriptor.
 
   key:
     type: object

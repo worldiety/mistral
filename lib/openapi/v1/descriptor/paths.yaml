@@ -1,13 +1,13 @@
-metrics:
+descriptors:
   get:
-    operationId: ListMetrics
+    operationId: ListDescriptors
     security:
       - bearerAuth: [ ]
     tags:
-      - metrics
-    summary: Returns a list of all metrics.
+      - descriptors
+    summary: Returns a list of all descriptors.
     description: |
-      A metric may have additional meta data, like a name or information about the origin from which it has been imported.
+      A descriptor may have additional meta data, like a name or information about the origin from which it has been imported.
 
 
     responses:

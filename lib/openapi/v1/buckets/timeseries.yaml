@@ -16,9 +16,9 @@ timeseries:
         required: true
         schema:
           $ref: '../uuid/UUID.yaml'
-      - name: metric-id
+      - name: ts-id
         in: path
-        description: 'Identifier of the metric within the bucket.'
+        description: 'Identifier of the time series within the bucket.'
         required: true
         schema:
           $ref: '../uuid/UUID.yaml'
@@ -75,9 +75,9 @@ timeseries:
         required: true
         schema:
           $ref: '../uuid/UUID.yaml'
-      - name: metric-id
+      - name: ts-id
         in: path
-        description: 'Identifier of the metric within the bucket.'
+        description: 'Identifier of the time series within the bucket.'
         required: true
         schema:
           $ref: '../uuid/UUID.yaml'
@@ -141,9 +141,9 @@ timeseries:
         required: true
         schema:
           $ref: '../uuid/UUID.yaml'
-      - name: metric-id
+      - name: ts-id
         in: path
-        description: 'Identifier of the metric within the bucket.'
+        description: 'Identifier of the time series within the bucket.'
         required: true
         schema:
           $ref: '../uuid/UUID.yaml'

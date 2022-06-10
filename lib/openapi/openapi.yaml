@@ -344,9 +344,9 @@ tags:
 
   - name: timeseries
     description: |
-      Resources of _timeseries_ allows access to ranges of stored time series data within a specific
-      bucket and metric. 
-      All time series data within a bucket and metric is treated uniquely per time stamp, which should
+      Resources of _timeseries_ allows access to ranges of stored time series points within a specific
+      bucket. 
+      All time series data within a bucket and time series is treated uniquely per time stamp, which should
       be represented as a Unix timestamp in seconds since Epoch, which is also expected by
       all [MiEl kernel functions](#tag/kernels).
 
@@ -354,17 +354,17 @@ tags:
     description: |
       Resources of _descriptors_ contain bucket-wide meta data identified by the ID of a time series.
       
-      Time series data is shared per bucket and uniquely addressed using a metric id.
-      To commonly manage information about a specific metric id, these resource can be used.
-      Technically, the metric meta data are separated from the actual time series data.
+      Time series data is shared per bucket and uniquely addressed using a time series id.
+      To commonly manage information about a specific time series, these resource can be used.
+      Technically, the time series descriptor meta data is separated from the actual time series data.
       Even though, they share the same identifiers, they have nothing in common and are only
       conventionally related. This also affects the transaction semantics: changing meta data
       are not propagated through the time series WAL. 
       Therefore, the existence of meta data for metrics is not related to the existence of actual time series
       data within a metric shard of a bucket.
       The following rules of thumb are helpful:
-      * create the metric meta data before importing any time series data, to ensure that a compute kernel has access to the defined meta data, especially like the scale.
-      * do never change the semantics of a metric, especially if the way of sampling has changed. Create a new metric, otherwise computations will likely be wrong. 
+      * create the descriptor before importing any time series data, to ensure that a compute kernel has access to the defined meta data, especially like the scale.
+      * do never change the semantics of a time series, especially sampling or scaling must not be changed. Instead, create a new time series, otherwise computations will likely be wrong. 
 
 paths:
 
@@ -375,8 +375,8 @@ paths:
   /healthz:
     $ref: './v1/status/paths.yaml#/healthz'
 
-  /api/v1/metrics:
-    $ref: './v1/descriptor/paths.yaml#/metrics'
+  /api/v1/descriptors:
+    $ref: './v1/descriptor/paths.yaml#/descriptors'
 
   /api/v1/buckets:
     $ref: './v1/buckets/paths.yaml#/buckets'
@@ -384,7 +384,7 @@ paths:
   /api/v1/buckets/{id}:
     $ref: './v1/buckets/paths.yaml#/buckets-{id}'
 
-  /api/v1/buckets/{bucket-id}/timeseries/{metric-id}:
+  /api/v1/buckets/{bucket-id}/timeseries/{ts-id}:
     $ref: './v1/buckets/timeseries.yaml#/timeseries'
 
   /api/v1/bucketgroups:

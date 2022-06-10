@@ -2,19 +2,19 @@ type: string
 description: |
   A Period describes the base interval of a sampling.
   The following intervals are specified:
-    * `10m`: the metric value consists of whatever has been measured within a constant interval of 600 seconds.
-    * `15m`: the metric value consists of whatever has been measured within a constant interval of 900 seconds.
-    * `daily (deprecated)`: the metric value consists of whatever has been measured within a time zone specific interval.
+    * `10m`: the time series value consists of whatever has been measured within a constant interval of 600 seconds.
+    * `15m`: the time series value consists of whatever has been measured within a constant interval of 900 seconds.
+    * `daily (deprecated)`: the time series value consists of whatever has been measured within a time zone specific interval.
        It is deprecated because this indicates that a time zone dependent data aggregation has already happened which
        makes sane post-processing nearly impossible. Use a compute [kernel](#tag/kernels) and a variable
        timezone on a constant interval like 10m. E.g. it is not possible anymore, to aggregate into a month of another
        timezone.
-     * `monthly (deprecated)`: the metric value consists of whatever has been measured within a time zone specific interval.
+     * `monthly (deprecated)`: the time series value consists of whatever has been measured within a time zone specific interval.
        It is deprecated because this indicates that a time zone dependent data aggregation has already happened which
        makes sane post-processing nearly impossible. Use a compute [kernel](#tag/kernels) and a variable
        timezone on a constant interval like 10m. E.g. it is not possible anymore, to aggregate into a year of another
        timezone.
-     * `none`: the metric value has been measured or calculated without any significant duration.
+     * `none`: the time series value has been measured or calculated without any significant duration.
        This is only and always the case for samplings of `instant` or `levelBegin` or `levelEnd`.
   
   Additional intervals may be standardized later. 
