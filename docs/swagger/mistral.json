@@ -38,11 +38,11 @@
     },
     {
       "name": "timeseries",
-      "description": "Resources of _timeseries_ allows access to ranges of stored time series data within a specific\nbucket and metric. \nAll time series data within a bucket and metric is treated uniquely per time stamp, which should\nbe represented as a Unix timestamp in seconds since Epoch, which is also expected by\nall [MiEl kernel functions](#tag/kernels).\n"
+      "description": "Resources of _timeseries_ allows access to ranges of stored time series points within a specific\nbucket. \nAll time series data within a bucket and time series is treated uniquely per time stamp, which should\nbe represented as a Unix timestamp in seconds since Epoch, which is also expected by\nall [MiEl kernel functions](#tag/kernels).\n"
     },
     {
       "name": "descriptors",
-      "description": "Resources of _descriptors_ contain bucket-wide meta data identified by the ID of a time series.\n\nTime series data is shared per bucket and uniquely addressed using a metric id.\nTo commonly manage information about a specific metric id, these resource can be used.\nTechnically, the metric meta data are separated from the actual time series data.\nEven though, they share the same identifiers, they have nothing in common and are only\nconventionally related. This also affects the transaction semantics: changing meta data\nare not propagated through the time series WAL. \nTherefore, the existence of meta data for metrics is not related to the existence of actual time series\ndata within a metric shard of a bucket.\nThe following rules of thumb are helpful:\n* create the metric meta data before importing any time series data, to ensure that a compute kernel has access to the defined meta data, especially like the scale.\n* do never change the semantics of a metric, especially if the way of sampling has changed. Create a new metric, otherwise computations will likely be wrong. \n"
+      "description": "Resources of _descriptors_ contain bucket-wide meta data identified by the ID of a time series.\n\nTime series data is shared per bucket and uniquely addressed using a time series id.\nTo commonly manage information about a specific time series, these resource can be used.\nTechnically, the time series descriptor meta data is separated from the actual time series data.\nEven though, they share the same identifiers, they have nothing in common and are only\nconventionally related. This also affects the transaction semantics: changing meta data\nare not propagated through the time series WAL. \nTherefore, the existence of meta data for metrics is not related to the existence of actual time series\ndata within a metric shard of a bucket.\nThe following rules of thumb are helpful:\n* create the descriptor before importing any time series data, to ensure that a compute kernel has access to the defined meta data, especially like the scale.\n* do never change the semantics of a time series, especially sampling or scaling must not be changed. Instead, create a new time series, otherwise computations will likely be wrong. \n"
     }
   ],
   "paths": {
@@ -71,22 +71,22 @@
         }
       }
     },
-    "/api/v1/metrics": {
+    "/api/v1/descriptors": {
       "get": {
-        "operationId": "ListMetrics",
+        "operationId": "ListDescriptors",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "tags": [
-          "metrics"
+          "descriptors"
         ],
-        "summary": "Returns a list of all metrics.",
-        "description": "A metric may have additional meta data, like a name or information about the origin from which it has been imported.\n",
+        "summary": "Returns a list of all descriptors.",
+        "description": "A descriptor may have additional meta data, like a name or information about the origin from which it has been imported.\n",
         "responses": {
           "200": {
-            "description": "A Metric defines the nature of a time series. \nA _time series_ is defined as a series of key-value tuples, where the key is a unique Unix time stamp and the value is an integer.\nAll tuples are ordered ascending based on the time stamp.\nThe nature of a metric must be constant for all associated time series tuples over all time.\nTo programmatically decide, which kind of calculations are valid, a metric contains various meta information to describe what and how the value must be interpreted.\nA metric must be quantifiable and must have a unit.\nTypically, a metric is a _physical quantity_ or a business metric like a _key performance indicator_.\n",
+            "description": "A Descriptor defines the nature of a time series. \nA _time series_ is defined as a series of key-value tuples, where the key is a unique Unix time stamp and the value is an integer.\nAll tuples are ordered ascending based on the time stamp.\nThe nature of a Descriptor must be constant for all associated time series tuples over all time.\nTo programmatically decide, which kind of calculations are valid, a Descriptor contains various meta information to describe what and how the value must be interpreted.\nA Descriptor must be quantifiable and must have a unit.\nTypically, a Descriptor is a _physical quantity_ or a business Descriptor like a _key performance indicator_.\n",
             "content": {
               "application/json": {
                 "schema": {
@@ -97,6 +97,148 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/descriptors/{id}": {
+      "get": {
+        "operationId": "GetDescriptor",
+        "summary": "Returns the descriptor for a single time series.",
+        "description": "A time series always has an attached set of meta data, like a name or information about the origin from which it has been imported.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "descriptors"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "description": "The time series identifier.",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Descriptor"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "404": {
+            "$ref": "#/components/responses/C404"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteDescriptor",
+        "summary": "Removes the meta data and all time series in all buckets.",
+        "description": "<img src=\"https://worldiety.github.io/mistral/exclamation.svg\" width=\"32\">\n\nThis endpoint resides in the dangerzone because it is not entirely protected\nby transactions and very I/O intensive. \nThis endpoint was created to support refactorings of your middleware and \nshould otherwise never be used.\n\nIn all buckets including the descriptor meta data and time series data is removed. \nThe current implementation is always blocking and returns a 204 on success. \nIf the service crashes or fails with a 500, better start consulting your backup.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "descriptors"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "description": "The descriptor identifier.",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/C204"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      },
+      "put": {
+        "operationId": "SaveDescriptor",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "descriptors"
+        ],
+        "summary": "Create or update a time series descriptor.",
+        "description": "A time series may have additional meta data, like a name or information about the origin from which it has been imported.\nBuckets are not modified.\n",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The time series identifier.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Descriptor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/C201"
+          },
+          "202": {
+            "$ref": "#/components/responses/C202"
+          },
+          "204": {
+            "$ref": "#/components/responses/C204"
           },
           "400": {
             "$ref": "#/components/responses/C400"
@@ -291,7 +433,7 @@
         }
       }
     },
-    "/api/v1/buckets/{bucket-id}/timeseries/{metric-id}": {
+    "/api/v1/buckets/{bucket-id}/timeseries/{ts-id}": {
       "get": {
         "operationId": "GetPoints",
         "security": [
@@ -315,9 +457,9 @@
             }
           },
           {
-            "name": "metric-id",
+            "name": "ts-id",
             "in": "path",
-            "description": "Identifier of the metric within the bucket.",
+            "description": "Identifier of the time series within the bucket.",
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/UUID"
@@ -327,7 +469,7 @@
             "name": "interval",
             "in": "query",
             "description": "Range is a string representation of a range. ( or ] can be used to indicate exclusive and inclusive intervals.\n( or ) means exclusive and [ or ] means inclusive.\n\nFormat specification:\n\n  ```< [|( > < min >, < max > < ]|) > @ < IANA time zone name >```\n",
-            "required": true,
+            "required": false,
             "schema": {
               "$ref": "#/components/schemas/Range"
             }
@@ -391,9 +533,9 @@
             }
           },
           {
-            "name": "metric-id",
+            "name": "ts-id",
             "in": "path",
-            "description": "Identifier of the metric within the bucket.",
+            "description": "Identifier of the time series within the bucket.",
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/UUID"
@@ -403,7 +545,7 @@
             "name": "interval",
             "in": "query",
             "description": "Range is a string representation of a range. ( or ] can be used to indicate exclusive and inclusive intervals.\n( or ) means exclusive and [ or ] means inclusive.\n\nFormat specification:\n\n  ```< [|( > < min >, < max > < ]|) > @ < IANA time zone name >```\n",
-            "required": true,
+            "required": false,
             "schema": {
               "$ref": "#/components/schemas/Range"
             }
@@ -463,9 +605,9 @@
             }
           },
           {
-            "name": "metric-id",
+            "name": "ts-id",
             "in": "path",
-            "description": "Identifier of the metric within the bucket.",
+            "description": "Identifier of the time series within the bucket.",
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/UUID"
@@ -1050,6 +1192,99 @@
           }
         }
       }
+    },
+    "/api/v1/merges/timeseries": {
+      "post": {
+        "operationId": "MergeTimeSeries",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "timeseries"
+        ],
+        "summary": "Merge time series into each other.",
+        "description": "Takes the given transitions and applies them eventually from old to new. Old values are deleted and put on top of potentially existing new values. Flush will force an immediate consistency. If used wrong (e.g. single metric merge and flush sequentially), flush will cause a massive write amplification which can break the servers' storage system (e.g. 13 EiB to write for 700 metrics requiring 20TiB disk usage). It is valid to merge empty or not existing metrics into existing. It is also valid to merge existing metrics into empty or not existing metrics. Note that due to the nature of distinct meta and metrics databases, the consistency between the two cannot be guaranteed. So a failure may result in an invalid divergent state, even though each of them may still be consistent from their individual perspective.",
+        "parameters": [
+          {
+            "name": "X-Flush",
+            "in": "header",
+            "description": "force flush, blocks and makes changes immediately visible. This hurts performance seriously.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkSeriesMergeMapping"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/C202"
+          },
+          "204": {
+            "$ref": "#/components/responses/C204"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
+    },
+    "/api/v1/renames/buckets": {
+      "post": {
+        "operationId": "RenameBuckets",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "buckets"
+        ],
+        "summary": "Renames bucket identifiers.",
+        "description": "<img src=\"https://worldiety.github.io/mistral/exclamation.svg\" width=\"32\">\n\nThis endpoint resides in the dangerzone because it is not entirely protected\nby transactions and very I/O intensive. \nThis endpoint was created to support data migrations and refactorings of your middleware and \nshould otherwise never be used. Always create a backup before using. If a target identifier already exists,\nthis operation will fail. See also the [time series merges](#tag/timeseries/operation/MergeTimeSeries) operation.\n\nTechnically, a global lock is acquired to protect against weired (logical) races, while performing a\nrename, so inserting more data will likely cause a timeout. A change of an ID will rewrite the entire bucket, so changing all\nIDs will rewrite your entire dataset. While rewriting, the entire server is blocked and will issue timeouts\non all endpoints (besides healthz). If the server crashes while performing this operation, the result may\nbe an inconsistent data set, which may have files named after old ids causing a data loss after writing\nto the new or old id again. So if you encounter a crash, better restore from a clean backup and try again.\nWhile loading, we try to detect such broken data sets and reject to start. Note that all pending changes\nare flushed before. If successful, there is no more pending data left and everything is consistent.\n\nThe metadata is updated similarly, however metadata is treated entirely optional. The metadata of old\nreplaces the metadata of new entirely. If old does not exist, new is replaced with empty defaults. If old\nexists it will be deleted.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkBucketRename"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/C204"
+          },
+          "400": {
+            "$ref": "#/components/responses/C400"
+          },
+          "403": {
+            "$ref": "#/components/responses/C403"
+          },
+          "500": {
+            "$ref": "#/components/responses/C500"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1171,7 +1406,7 @@
       },
       "Period": {
         "type": "string",
-        "description": "A Period describes the base interval of a sampling.\nThe following intervals are specified:\n  * `10m`: the metric value consists of whatever has been measured within a constant interval of 600 seconds.\n  * `15m`: the metric value consists of whatever has been measured within a constant interval of 900 seconds.\n  * `daily (deprecated)`: the metric value consists of whatever has been measured within a time zone specific interval.\n     It is deprecated because this indicates that a time zone dependent data aggregation has already happened which\n     makes sane post-processing nearly impossible. Use a compute [kernel](#tag/kernels) and a variable\n     timezone on a constant interval like 10m. E.g. it is not possible anymore, to aggregate into a month of another\n     timezone.\n   * `monthly (deprecated)`: the metric value consists of whatever has been measured within a time zone specific interval.\n     It is deprecated because this indicates that a time zone dependent data aggregation has already happened which\n     makes sane post-processing nearly impossible. Use a compute [kernel](#tag/kernels) and a variable\n     timezone on a constant interval like 10m. E.g. it is not possible anymore, to aggregate into a year of another\n     timezone.\n   * `none`: the metric value has been measured or calculated without any significant duration.\n     This is only and always the case for samplings of `instant` or `levelBegin` or `levelEnd`.\n\nAdditional intervals may be standardized later. \nImplementations must accept non-standardized intervals, which may be passed and evaluated by a custom compute [kernel](#tag/kernels).\n",
+        "description": "A Period describes the base interval of a sampling.\nThe following intervals are specified:\n  * `10m`: the time series value consists of whatever has been measured within a constant interval of 600 seconds.\n  * `15m`: the time series value consists of whatever has been measured within a constant interval of 900 seconds.\n  * `daily (deprecated)`: the time series value consists of whatever has been measured within a time zone specific interval.\n     It is deprecated because this indicates that a time zone dependent data aggregation has already happened which\n     makes sane post-processing nearly impossible. Use a compute [kernel](#tag/kernels) and a variable\n     timezone on a constant interval like 10m. E.g. it is not possible anymore, to aggregate into a month of another\n     timezone.\n   * `monthly (deprecated)`: the time series value consists of whatever has been measured within a time zone specific interval.\n     It is deprecated because this indicates that a time zone dependent data aggregation has already happened which\n     makes sane post-processing nearly impossible. Use a compute [kernel](#tag/kernels) and a variable\n     timezone on a constant interval like 10m. E.g. it is not possible anymore, to aggregate into a year of another\n     timezone.\n   * `none`: the time series value has been measured or calculated without any significant duration.\n     This is only and always the case for samplings of `instant` or `levelBegin` or `levelEnd`.\n\nAdditional intervals may be standardized later. \nImplementations must accept non-standardized intervals, which may be passed and evaluated by a custom compute [kernel](#tag/kernels).\n",
         "enum": [
           "10m",
           "15m",
@@ -1182,12 +1417,12 @@
       },
       "Descriptor": {
         "type": "object",
-        "description": "A Metric defines the nature of a time series. \nA _time series_ is defined as a series of key-value tuples, where the key is a unique Unix time stamp and the value is an integer.\nAll tuples are ordered ascending based on the time stamp.\nThe nature of a metric must be constant for all associated time series tuples over all time.\nTo programmatically decide, which kind of calculations are valid, a metric contains various meta information to describe what and how the value must be interpreted.\nA metric must be quantifiable and must have a unit.\nTypically, a metric is a _physical quantity_ or a business metric like a _key performance indicator_.\n",
+        "description": "A Descriptor defines the nature of a time series. \nA _time series_ is defined as a series of key-value tuples, where the key is a unique Unix time stamp and the value is an integer.\nAll tuples are ordered ascending based on the time stamp.\nThe nature of a Descriptor must be constant for all associated time series tuples over all time.\nTo programmatically decide, which kind of calculations are valid, a Descriptor contains various meta information to describe what and how the value must be interpreted.\nA Descriptor must be quantifiable and must have a unit.\nTypically, a Descriptor is a _physical quantity_ or a business Descriptor like a _key performance indicator_.\n",
         "properties": {
           "id": {
             "type": "string",
             "format": "uuid",
-            "description": "The ID of the metric."
+            "description": "The ID of the Descriptor."
           },
           "key": {
             "type": "object",
@@ -1566,6 +1801,48 @@
                 ]
               }
             }
+          }
+        }
+      },
+      "BulkSeriesMergeMapping": {
+        "type": "object",
+        "properties": {
+          "dst": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Represents UUIDs of time series which are the destination to merge the source values into."
+          },
+          "src": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Represents UUIDs of time series which are the source to load from."
+          }
+        }
+      },
+      "BulkBucketRename": {
+        "type": "object",
+        "properties": {
+          "old": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Represents UUIDs of old bucket ids."
+          },
+          "new": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Represents UUIDs of new bucket ids."
           }
         }
       }

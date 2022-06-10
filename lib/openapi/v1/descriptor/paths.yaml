@@ -66,7 +66,7 @@ descriptors-{id}:
     operationId: DeleteDescriptor
     summary: Removes the meta data and all time series in all buckets.
     description: |
-      <img src="https://worldiety.github.io/mistral/exclamation.svg">
+      <img src="https://worldiety.github.io/mistral/exclamation.svg" width="32">
 
       This endpoint resides in the dangerzone because it is not entirely protected
       by transactions and very I/O intensive. 
