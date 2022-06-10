@@ -1,0 +1,91 @@
+merges:
+  post:
+    operationId: MergeTimeSeries
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - timeseries
+
+    summary: Merge time series into each other.
+    description: Takes the given transitions and applies them eventually from old to new.
+      Old values are deleted and put on top of potentially existing new values. Flush will force an immediate consistency.
+      If used wrong (e.g. single metric merge and flush sequentially), flush will cause a massive write amplification
+      which can break the servers' storage system (e.g. 13 EiB to write for 700 metrics requiring 20TiB disk usage).
+      It is valid to merge empty or not existing metrics into existing.
+      It is also valid to merge existing metrics into empty or not existing metrics.
+      Note that due to the nature of distinct meta and metrics databases, the consistency between the two cannot
+      be guaranteed. So a failure may result in an invalid divergent state, even though each of them may still be
+      consistent from their individual perspective.
+    parameters:
+      - name: 'X-Flush'
+        in: header
+        description: 'force flush, blocks and makes changes immediately visible. This hurts performance seriously.'
+        required: false
+        schema:
+          type: boolean
+          default: false
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './BulkSeriesMergeMapping.yaml'
+
+    responses:
+      '202':
+        $ref: '../errors/C202.yaml'
+      '204':
+        $ref: '../errors/C204.yaml'
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'
+
+
+renames:
+  post:
+    operationId: RenameBuckets
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - buckets
+    summary: Renames bucket identifiers.
+    description: |
+      <img src="https://worldiety.github.io/mistral/exclamation.svg">
+      
+      This endpoint resides in the dangerzone because it is not entirely protected
+      by transactions and very I/O intensive. 
+      This endpoint was created to support data migrations and refactorings of your middleware and 
+      should otherwise never be used. Always create a backup before using. If a target identifier already exists,
+      this operation will fail. See also the [time series merges](#tag/timeseries/operation/MergeTimeSeries) operation.
+      
+      Technically, a global lock is acquired to protect against weired (logical) races, while performing a
+      rename, so inserting more data will likely cause a timeout. A change of an ID will rewrite the entire bucket, so changing all
+      IDs will rewrite your entire dataset. While rewriting, the entire server is blocked and will issue timeouts
+      on all endpoints (besides healthz). If the server crashes while performing this operation, the result may
+      be an inconsistent data set, which may have files named after old ids causing a data loss after writing
+      to the new or old id again. So if you encounter a crash, better restore from a clean backup and try again.
+      While loading, we try to detect such broken data sets and reject to start. Note that all pending changes
+      are flushed before. If successful, there is no more pending data left and everything is consistent.
+      
+      The metadata is updated similarly, however metadata is treated entirely optional. The metadata of old
+      replaces the metadata of new entirely. If old does not exist, new is replaced with empty defaults. If old
+      exists it will be deleted.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './BulkBucketRename.yaml'
+
+    responses:
+      '204':
+        $ref: '../errors/C204.yaml'
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'

@@ -26,3 +26,112 @@ descriptors:
         $ref: '../errors/C403.yaml'
       '500':
         $ref: '../errors/C500.yaml'
+
+descriptors-{id}:
+  get:
+    operationId: GetDescriptor
+    summary: Returns the descriptor for a single time series.
+    description: A time series always has an attached set of meta data, like a name or information about the origin from which it has been imported.
+
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - descriptors
+    parameters:
+      - name: id
+        description: The time series identifier.
+        in: path
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+    responses:
+      '200':
+        description: successful operation
+        content:
+          application/json:
+            schema:
+              $ref: 'Descriptor.yaml'
+
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '404':
+        $ref: '../errors/C404.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'
+
+
+  delete:
+    operationId: DeleteDescriptor
+    summary: Removes the meta data and all time series in all buckets.
+    description: |
+      <img src="https://worldiety.github.io/mistral/exclamation.svg">
+
+      This endpoint resides in the dangerzone because it is not entirely protected
+      by transactions and very I/O intensive. 
+      This endpoint was created to support refactorings of your middleware and 
+      should otherwise never be used.
+      
+      In all buckets including the descriptor meta data and time series data is removed. 
+      The current implementation is always blocking and returns a 204 on success. 
+      If the service crashes or fails with a 500, better start consulting your backup.
+
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - descriptors
+    parameters:
+      - name: id
+        description: The descriptor identifier.
+        in: path
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+    responses:
+      '204':
+        $ref: '../errors/C204.yaml'
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'
+
+
+  put:
+    operationId: SaveDescriptor
+    security:
+      - bearerAuth: [ ]
+    tags:
+      - descriptors
+    summary: Create or update a time series descriptor.
+    description: |
+      A time series may have additional meta data, like a name or information about the origin from which it has been imported.
+      Buckets are not modified.
+    parameters:
+      - name: id
+        in: path
+        description: The time series identifier.
+        required: true
+        schema:
+          $ref: '../uuid/UUID.yaml'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "./Descriptor.yaml"
+    responses:
+      '201':
+        $ref: '../errors/C201.yaml'
+      '202':
+        $ref: '../errors/C202.yaml'
+      '204':
+        $ref: '../errors/C204.yaml'
+      '400':
+        $ref: '../errors/C400.yaml'
+      '403':
+        $ref: '../errors/C403.yaml'
+      '500':
+        $ref: '../errors/C500.yaml'

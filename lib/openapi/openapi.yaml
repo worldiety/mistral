@@ -378,6 +378,9 @@ paths:
   /api/v1/descriptors:
     $ref: './v1/descriptor/paths.yaml#/descriptors'
 
+  /api/v1/descriptors/{id}:
+    $ref: './v1/descriptor/paths.yaml#/descriptors-{id}'
+
   /api/v1/buckets:
     $ref: './v1/buckets/paths.yaml#/buckets'
 
@@ -408,6 +411,12 @@ paths:
 
   /api/v1/kernels/{id}/parameter:
     $ref: './v1/kernels/params.yaml#/params'
+
+  /api/v1/merges/timeseries:
+    $ref: './v1/bulk/paths.yaml#/merges'
+
+  /api/v1/renames/buckets:
+    $ref: './v1/bulk/paths.yaml#/renames'
 
 components:
   securitySchemes:

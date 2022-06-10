@@ -26,7 +26,7 @@ timeseries:
         in: query
         description:
           $ref: '../time/Range.yaml#/description'
-        required: true
+        required: false
         schema:
           $ref: '../time/Range.yaml'
 
@@ -85,7 +85,7 @@ timeseries:
         in: query
         description:
           $ref: '../time/Range.yaml#/description'
-        required: true
+        required: false
         schema:
           $ref: '../time/Range.yaml'
 

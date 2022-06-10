@@ -1,0 +1,14 @@
+type: object
+properties:
+  old:
+    type: array
+    items:
+      type: string
+      format: uuid
+    description: Represents UUIDs of old bucket ids.
+  new:
+    type: array
+    items:
+      type: string
+      format: uuid
+    description: Represents UUIDs of new bucket ids.
