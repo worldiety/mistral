@@ -53,7 +53,7 @@ renames:
       - buckets
     summary: Renames bucket identifiers.
     description: |
-      <img src="https://worldiety.github.io/mistral/exclamation.svg" width="32">
+      <img style="display:inline" src="https://worldiety.github.io/mistral/exclamation.svg" width="32">
       
       This endpoint resides in the dangerzone because it is not entirely protected
       by transactions and very I/O intensive. 

@@ -372,8 +372,8 @@ paths:
   # Status endpoint
   #########################################################
 
-  /healthz:
-    $ref: './v1/status/paths.yaml#/healthz'
+  /health:
+    $ref: './v1/status/paths.yaml#/health'
 
   /api/v1/descriptors:
     $ref: './v1/descriptor/paths.yaml#/descriptors'
