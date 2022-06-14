@@ -31,7 +31,7 @@ properties:
       problem, except for purposes of localization.
 
   status:
-    type: number
+    type: integer
     nullable: false
     format: int32
     description: The HTTP status code.

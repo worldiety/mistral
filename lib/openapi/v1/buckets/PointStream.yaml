@@ -22,7 +22,7 @@ example: |
   {"x": 1653988965, "y": 44}
 properties:
   x:
-    type: number
+    type: integer
     format: int64
     description: |
       X is the unique unix timestamp, usually in seconds since Epoch.
@@ -31,7 +31,7 @@ properties:
       If otherwise required, you can get the buckets time zone from the [bucket](#tag/buckets/operation/GetBucket).
     example: 1653988963
   y:
-    type: number
+    type: integer
     format: int64
     description: |
       Y is the pre-scaled value for the timestamp, usually a metric value. 

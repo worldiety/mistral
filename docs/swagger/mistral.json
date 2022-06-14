@@ -1259,7 +1259,7 @@
           "buckets"
         ],
         "summary": "Renames bucket identifiers.",
-        "description": "<img src=\"https://worldiety.github.io/mistral/exclamation.svg\" width=\"32\">\n\nThis endpoint resides in the dangerzone because it is not entirely protected\nby transactions and very I/O intensive. \nThis endpoint was created to support data migrations and refactorings of your middleware and \nshould otherwise never be used. Always create a backup before using. If a target identifier already exists,\nthis operation will fail. See also the [time series merges](#tag/timeseries/operation/MergeTimeSeries) operation.\n\nTechnically, a global lock is acquired to protect against weired (logical) races, while performing a\nrename, so inserting more data will likely cause a timeout. A change of an ID will rewrite the entire bucket, so changing all\nIDs will rewrite your entire dataset. While rewriting, the entire server is blocked and will issue timeouts\non all endpoints (besides healthz). If the server crashes while performing this operation, the result may\nbe an inconsistent data set, which may have files named after old ids causing a data loss after writing\nto the new or old id again. So if you encounter a crash, better restore from a clean backup and try again.\nWhile loading, we try to detect such broken data sets and reject to start. Note that all pending changes\nare flushed before. If successful, there is no more pending data left and everything is consistent.\n\nThe metadata is updated similarly, however metadata is treated entirely optional. The metadata of old\nreplaces the metadata of new entirely. If old does not exist, new is replaced with empty defaults. If old\nexists it will be deleted.\n",
+        "description": "<img style=\"display:inline\" src=\"https://worldiety.github.io/mistral/exclamation.svg\" width=\"32\">\n\nThis endpoint resides in the dangerzone because it is not entirely protected\nby transactions and very I/O intensive. \nThis endpoint was created to support data migrations and refactorings of your middleware and \nshould otherwise never be used. Always create a backup before using. If a target identifier already exists,\nthis operation will fail. See also the [time series merges](#tag/timeseries/operation/MergeTimeSeries) operation.\n\nTechnically, a global lock is acquired to protect against weired (logical) races, while performing a\nrename, so inserting more data will likely cause a timeout. A change of an ID will rewrite the entire bucket, so changing all\nIDs will rewrite your entire dataset. While rewriting, the entire server is blocked and will issue timeouts\non all endpoints (besides healthz). If the server crashes while performing this operation, the result may\nbe an inconsistent data set, which may have files named after old ids causing a data loss after writing\nto the new or old id again. So if you encounter a crash, better restore from a clean backup and try again.\nWhile loading, we try to detect such broken data sets and reject to start. Note that all pending changes\nare flushed before. If successful, there is no more pending data left and everything is consistent.\n\nThe metadata is updated similarly, however metadata is treated entirely optional. The metadata of old\nreplaces the metadata of new entirely. If old does not exist, new is replaced with empty defaults. If old\nexists it will be deleted.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -1382,7 +1382,7 @@
             "description": "A short, human-readable summary of the problem\ntype.  It SHOULD NOT change from occurrence to occurrence of the\nproblem, except for purposes of localization.\n"
           },
           "status": {
-            "type": "number",
+            "type": "integer",
             "nullable": false,
             "format": "int32",
             "description": "The HTTP status code."
@@ -1644,13 +1644,13 @@
         "example": "{\"x\": 1653988963, \"y\": 42}\n\n{\"x\": 1653988964, \"y\": 43}\n\n{\"x\": 1653988965, \"y\": 44}\n",
         "properties": {
           "x": {
-            "type": "number",
+            "type": "integer",
             "format": "int64",
             "description": "X is the unique unix timestamp, usually in seconds since Epoch.\nIt does intentionally not carry information about timezones or UTF offsets.\nFor proper calculation and transformation (like grouping by day), use the [kernels API](#tag/kernels).\nIf otherwise required, you can get the buckets time zone from the [bucket](#tag/buckets/operation/GetBucket).\n",
             "example": 1653988963
           },
           "y": {
-            "type": "number",
+            "type": "integer",
             "format": "int64",
             "description": "Y is the pre-scaled value for the timestamp, usually a metric value. \nConsult the metric endpoints, to learn more about the meaning of this value, e.g. what it means (like kWh)\nor how it must be post-multiplied to be displayed properly.\n",
             "example": 42
