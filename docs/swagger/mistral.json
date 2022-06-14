@@ -1427,6 +1427,13 @@
           }
         }
       },
+      "UUID": {
+        "type": "string",
+        "x-go-type": "string",
+        "format": "uuid",
+        "description": "The unique ID of the resource in the canonical UUID format.",
+        "example": "550e8400-e29b-11d4-a716-446655440000"
+      },
       "Period": {
         "type": "string",
         "description": "A Period describes the base interval of a sampling.\nThe following intervals are specified:\n  * `10m`: the time series value consists of whatever has been measured within a constant interval of 600 seconds.\n  * `15m`: the time series value consists of whatever has been measured within a constant interval of 900 seconds.\n  * `daily (deprecated)`: the time series value consists of whatever has been measured within a time zone specific interval.\n     It is deprecated because this indicates that a time zone dependent data aggregation has already happened which\n     makes sane post-processing nearly impossible. Use a compute [kernel](#tag/kernels) and a variable\n     timezone on a constant interval like 10m. E.g. it is not possible anymore, to aggregate into a month of another\n     timezone.\n   * `monthly (deprecated)`: the time series value consists of whatever has been measured within a time zone specific interval.\n     It is deprecated because this indicates that a time zone dependent data aggregation has already happened which\n     makes sane post-processing nearly impossible. Use a compute [kernel](#tag/kernels) and a variable\n     timezone on a constant interval like 10m. E.g. it is not possible anymore, to aggregate into a year of another\n     timezone.\n   * `none`: the time series value has been measured or calculated without any significant duration.\n     This is only and always the case for samplings of `instant` or `levelBegin` or `levelEnd`.\n\nAdditional intervals may be standardized later. \nImplementations must accept non-standardized intervals, which may be passed and evaluated by a custom compute [kernel](#tag/kernels).\n",
@@ -1450,8 +1457,7 @@
         ],
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid",
+            "$ref": "#/components/schemas/UUID",
             "description": "The ID of the Descriptor.",
             "nullable": false
           },
@@ -1544,12 +1550,6 @@
             "description": "Arbitrary optional map of any kind of attributes.\nThis data holder can be used, to attach external or internal meta data to improve data interoperability\nor synchronizations.\nMistral never evaluates this and custom kernels should not do that either.\n"
           }
         }
-      },
-      "UUID": {
-        "type": "string",
-        "format": "uuid",
-        "description": "The unique ID of the resource in the canonical UUID format.",
-        "example": "550e8400-e29b-11d4-a716-446655440000"
       },
       "BucketType": {
         "type": "string",
@@ -1842,12 +1842,15 @@
       },
       "BulkSeriesMergeMapping": {
         "type": "object",
+        "required": [
+          "dst",
+          "src"
+        ],
         "properties": {
           "dst": {
             "type": "array",
             "items": {
-              "type": "string",
-              "format": "uuid"
+              "$ref": "#/components/schemas/UUID"
             },
             "description": "Represents UUIDs of time series which are the destination to merge the source values into.",
             "nullable": false
@@ -1855,8 +1858,7 @@
           "src": {
             "type": "array",
             "items": {
-              "type": "string",
-              "format": "uuid"
+              "$ref": "#/components/schemas/UUID"
             },
             "description": "Represents UUIDs of time series which are the source to load from.",
             "nullable": false
@@ -1865,12 +1867,15 @@
       },
       "BulkBucketRename": {
         "type": "object",
+        "required": [
+          "old",
+          "new"
+        ],
         "properties": {
           "old": {
             "type": "array",
             "items": {
-              "type": "string",
-              "format": "uuid"
+              "$ref": "#/components/schemas/UUID"
             },
             "description": "Represents UUIDs of old bucket ids.",
             "nullable": false
@@ -1878,8 +1883,7 @@
           "new": {
             "type": "array",
             "items": {
-              "type": "string",
-              "format": "uuid"
+              "$ref": "#/components/schemas/UUID"
             },
             "description": "Represents UUIDs of new bucket ids.",
             "nullable": false

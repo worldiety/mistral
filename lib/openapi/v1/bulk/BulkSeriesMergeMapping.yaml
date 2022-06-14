@@ -1,16 +1,17 @@
 type: object
+required:
+  - dst
+  - src
 properties:
   dst:
     type: array
     items:
-      type: string
-      format: uuid
+      $ref: '../uuid/UUID.yaml'
     description: Represents UUIDs of time series which are the destination to merge the source values into.
     nullable: false
   src:
     type: array
     items:
-      type: string
-      format: uuid
+      $ref: '../uuid/UUID.yaml'
     description: Represents UUIDs of time series which are the source to load from.
     nullable: false

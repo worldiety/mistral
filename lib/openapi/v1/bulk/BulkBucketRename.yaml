@@ -1,16 +1,17 @@
 type: object
+required:
+  - old
+  - new
 properties:
   old:
     type: array
     items:
-      type: string
-      format: uuid
+      $ref: '../uuid/UUID.yaml'
     description: Represents UUIDs of old bucket ids.
     nullable: false
   new:
     type: array
     items:
-      type: string
-      format: uuid
+      $ref: '../uuid/UUID.yaml'
     description: Represents UUIDs of new bucket ids.
     nullable: false

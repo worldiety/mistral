@@ -17,8 +17,7 @@ required:
 
 properties:
   id:
-    type: string
-    format: uuid
+    $ref: '../uuid/UUID.yaml'
     description: The ID of the Descriptor.
     nullable: false
 
