@@ -6,9 +6,11 @@ properties:
       type: string
       format: uuid
     description: Represents UUIDs of old bucket ids.
+    nullable: false
   new:
     type: array
     items:
       type: string
       format: uuid
     description: Represents UUIDs of new bucket ids.
+    nullable: false

@@ -1299,6 +1299,12 @@
       "Status": {
         "type": "object",
         "description": "A Status follows more or less the https://tools.ietf.org/id/draft-inadarei-api-health-check-01.html draft.\n",
+        "required": [
+          "status",
+          "version",
+          "releaseID",
+          "description"
+        ],
         "properties": {
           "status": {
             "type": "string",
@@ -1327,7 +1333,8 @@
           },
           "details": {
             "type": "object",
-            "description": "arbitrary map to describe status of components."
+            "description": "arbitrary map to describe status of components.",
+            "nullable": false
           }
         }
       },
@@ -1338,6 +1345,10 @@
           "name": ".address.firstname",
           "reason": "firstname must not be empty."
         },
+        "required": [
+          "name",
+          "reason"
+        ],
         "properties": {
           "name": {
             "type": "string",
@@ -1368,6 +1379,13 @@
             }
           ]
         },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "details",
+          "instance"
+        ],
         "properties": {
           "type": {
             "type": "string",
@@ -1423,11 +1441,19 @@
       "Descriptor": {
         "type": "object",
         "description": "A Descriptor defines the nature of a time series. \nA _time series_ is defined as a series of key-value tuples, where the key is a unique Unix time stamp and the value is an integer.\nAll tuples are ordered ascending based on the time stamp.\nThe nature of a Descriptor must be constant for all associated time series tuples over all time.\nTo programmatically decide, which kind of calculations are valid, a Descriptor contains various meta information to describe what and how the value must be interpreted.\nA Descriptor must be quantifiable and must have a unit.\nTypically, a Descriptor is a _physical quantity_ or a business Descriptor like a _key performance indicator_.\n",
+        "required": [
+          "id",
+          "key",
+          "value",
+          "sampling",
+          "xattr"
+        ],
         "properties": {
           "id": {
             "type": "string",
             "format": "uuid",
-            "description": "The ID of the Descriptor."
+            "description": "The ID of the Descriptor.",
+            "nullable": false
           },
           "key": {
             "type": "object",
@@ -1437,6 +1463,7 @@
                 "enum": [
                   "timestamp"
                 ],
+                "nullable": false,
                 "description": "The engine has been optimized to process equidistant timestamps.\nHowever, arbitrary 64 bit keys can be processed but will degrade performance and efficiency seriously. \nThe worst case scenario is to store random numbers.\nAll build-in functions expect a timestamp anyway.\n"
               },
               "unit": {
@@ -1513,6 +1540,7 @@
           },
           "xattr": {
             "type": "object",
+            "nullable": false,
             "description": "Arbitrary optional map of any kind of attributes.\nThis data holder can be used, to attach external or internal meta data to improve data interoperability\nor synchronizations.\nMistral never evaluates this and custom kernels should not do that either.\n"
           }
         }
@@ -1738,17 +1766,20 @@
             ],
             "items": {
               "type": "string"
-            }
+            },
+            "nullable": false
           },
           "name": {
             "type": "string",
             "description": "A short but arbitrary debug name in the default language for an end-user. Use the translations field for language specific values.",
-            "example": "daily avg"
+            "example": "daily avg",
+            "nullable": false
           },
           "description": {
             "type": "string",
             "description": "A longer and more descriptive text in the default language for an end-user about what the expression is about. Use the translations field for language specific values.",
-            "example": "a simple daily average calculation."
+            "example": "a simple daily average calculation.",
+            "nullable": false
           },
           "translations": {
             "$ref": "#/components/schemas/Translations"
@@ -1818,7 +1849,8 @@
               "type": "string",
               "format": "uuid"
             },
-            "description": "Represents UUIDs of time series which are the destination to merge the source values into."
+            "description": "Represents UUIDs of time series which are the destination to merge the source values into.",
+            "nullable": false
           },
           "src": {
             "type": "array",
@@ -1826,7 +1858,8 @@
               "type": "string",
               "format": "uuid"
             },
-            "description": "Represents UUIDs of time series which are the source to load from."
+            "description": "Represents UUIDs of time series which are the source to load from.",
+            "nullable": false
           }
         }
       },
@@ -1839,7 +1872,8 @@
               "type": "string",
               "format": "uuid"
             },
-            "description": "Represents UUIDs of old bucket ids."
+            "description": "Represents UUIDs of old bucket ids.",
+            "nullable": false
           },
           "new": {
             "type": "array",
@@ -1847,7 +1881,8 @@
               "type": "string",
               "format": "uuid"
             },
-            "description": "Represents UUIDs of new bucket ids."
+            "description": "Represents UUIDs of new bucket ids.",
+            "nullable": false
           }
         }
       }

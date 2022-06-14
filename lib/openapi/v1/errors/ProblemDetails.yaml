@@ -12,6 +12,13 @@ example:
     - name: .address.firstname
       reason: "Your firstname must not be empty."
 
+required:
+  - type
+  - title
+  - status
+  - details
+  - instance
+
 
 properties:
   type:

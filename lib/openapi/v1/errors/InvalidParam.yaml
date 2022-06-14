@@ -5,6 +5,9 @@ description: |
 example:
   name: .address.firstname
   reason: "firstname must not be empty."
+required:
+  - name
+  - reason
 properties:
   name:
     type: string

@@ -19,14 +19,17 @@ properties:
     example: [ "apexcharts", "daily" ]
     items:
       type: string
+    nullable: false
   name:
     type: string
     description: A short but arbitrary debug name in the default language for an end-user.
       Use the translations field for language specific values.
     example: daily avg
+    nullable: false
   description:
     type: string
     description: A longer and more descriptive text in the default language for an end-user about what the expression is about. Use the translations field for language specific values.
     example: a simple daily average calculation.
+    nullable: false
   translations:
     $ref: '../translation/Translations.yaml'

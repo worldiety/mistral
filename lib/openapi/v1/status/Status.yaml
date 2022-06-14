@@ -1,6 +1,11 @@
 type: object
 description: |
   A Status follows more or less the https://tools.ietf.org/id/draft-inadarei-api-health-check-01.html draft.
+required:
+  - status
+  - version
+  - releaseID
+  - description
 properties:
   status:
     type: string
@@ -22,3 +27,4 @@ properties:
   details:
     type: object
     description: arbitrary map to describe status of components.
+    nullable: false
