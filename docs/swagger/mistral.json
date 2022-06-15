@@ -1434,6 +1434,62 @@
         "description": "The unique ID of the resource in the canonical UUID format.",
         "example": "550e8400-e29b-11d4-a716-446655440000"
       },
+      "KeySpec": {
+        "type": "object",
+        "required": [
+          "unit",
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "timestamp"
+            ],
+            "nullable": false,
+            "description": "The engine has been optimized to process equidistant timestamps.\nHowever, arbitrary 64 bit keys can be processed but will degrade performance and efficiency seriously. \nThe worst case scenario is to store random numbers.\nAll build-in functions expect a timestamp anyway.\n"
+          },
+          "unit": {
+            "type": "string",
+            "nullable": false,
+            "enum": [
+              "seconds"
+            ],
+            "description": "The unit of the key must be in _seconds_. \nAlthough, the storage engine supports just a 64 bit signed integer, all build-in time-based pipeline functions\nexpect a second precision.\n"
+          }
+        }
+      },
+      "ValueSpec": {
+        "type": "object",
+        "required": [
+          "unit",
+          "aggregation",
+          "scale"
+        ],
+        "properties": {
+          "unit": {
+            "type": "string",
+            "description": "The unit of the value. This is nearly arbitrary and is usually derived from physical base units.\nTypical examples are kWh, rpm or km/h.\n"
+          },
+          "aggregation": {
+            "type": "string",
+            "enum": [
+              "max",
+              "min",
+              "avg",
+              "sum",
+              "none",
+              "other"
+            ],
+            "description": "A data aggregation takes a bunch of values and applies a non-inverse function on it. This always means that there is a loss of information. For example, the typical 10 minute or 15 minute values have been probably aggregated from a much faster source, like a 16kHz oscilloscope sampling."
+          },
+          "scale": {
+            "type": "integer",
+            "format": "int64",
+            "description": "mistral can only process integers. \nSo in case of floats or decimals this indicates the scale to divide or multiply the numbers before inserting or after querying.\nThis always has to be done explicitly to match the actual defined _unit_.\n"
+          }
+        }
+      },
       "Period": {
         "type": "string",
         "description": "A Period describes the base interval of a sampling.\nThe following intervals are specified:\n  * `10m`: the time series value consists of whatever has been measured within a constant interval of 600 seconds.\n  * `15m`: the time series value consists of whatever has been measured within a constant interval of 900 seconds.\n  * `daily (deprecated)`: the time series value consists of whatever has been measured within a time zone specific interval.\n     It is deprecated because this indicates that a time zone dependent data aggregation has already happened which\n     makes sane post-processing nearly impossible. Use a compute [kernel](#tag/kernels) and a variable\n     timezone on a constant interval like 10m. E.g. it is not possible anymore, to aggregate into a month of another\n     timezone.\n   * `monthly (deprecated)`: the time series value consists of whatever has been measured within a time zone specific interval.\n     It is deprecated because this indicates that a time zone dependent data aggregation has already happened which\n     makes sane post-processing nearly impossible. Use a compute [kernel](#tag/kernels) and a variable\n     timezone on a constant interval like 10m. E.g. it is not possible anymore, to aggregate into a year of another\n     timezone.\n   * `none`: the time series value has been measured or calculated without any significant duration.\n     This is only and always the case for samplings of `instant` or `levelBegin` or `levelEnd`.\n\nAdditional intervals may be standardized later. \nImplementations must accept non-standardized intervals, which may be passed and evaluated by a custom compute [kernel](#tag/kernels).\n",
@@ -1444,6 +1500,31 @@
           "monthly",
           "none"
         ]
+      },
+      "SamplingSpec": {
+        "type": "object",
+        "required": [
+          "type",
+          "period"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": false,
+            "enum": [
+              "periodStart",
+              "periodEnd",
+              "instant",
+              "levelBegin",
+              "levelEnd"
+            ],
+            "description": "The sampling describes how the combination of a key-value has been measured.\nThe following five types have been defined:\n\n## periodStart & periodEnd\nThe most natural kind is a period, where a sensor has created a bunch of samples over time.\nAt the end, there is always an aggregation involved, to return an associated single value.\n_periodStart_ defines, that the timestamp represents the beginning of the measurement.\n_periodEnd_ defines, that the timestamp represents the end of the measurement.\n\n\n```\n        0s                              600s          \n  ─────────┬────────────────────────────────┬───────▶   \n           │ aggregation period (e.g. 600s) │           \n           │   value (e.g. sums up to 42)   │           \n           └────────────────────────────────┘           \n           ▲              ▲                 ▲           \n           │            <-│->               │           \n           │              │                 │           \n           │              │                 │           \n  ┌──────────────────┐    │                 │           \n  │ start-aggregated │    │                 │           \n  └──────────────────┘    │                 │           \n                          │                 │           \n                          │                 │           \n                          │         ┌──────────────────┐\n                          │         │  end-aggregated  │\n                          │         └──────────────────┘\n                          │                             \n            ┌─────────────┴─────────────┐               \n            │   e.g. start of day in    │               \n            │     Australia/Eucla       │               \n            │                           │               \n            └───────────────────────────┘               \n```\n\n## instant\nAlthough technically there is always a sampling period involved to capture a measurement, an instant pretends \nthat there is no relevant aggregation to represent.\nMathematically, this means, that the value has been captured within an infinite small amount of time in \nexact that moment.\n\n## levelBegin & levelEnd\nLevel defines a state of the value, which describes a system until the next time indexed value.\n_levelBegin_ defines that the value is valid since (inclusive) the timestamp until the next timestamp is found.\n_levelEnd_ defines that the value is valid until (inclusive) the timestamp for any time until the first preceeding\ntimestamp, the value is valid.\n\n```\n                      │                       \n                      │                       \n                      │                       \n                      │                       \n ──────────────────   │   ─────────────────── \n ▲ ───────────▶       │         ◀───────────▲ \n │                    │                     │ \n │                    │                     │ \n │                    │                     │ \n ┌──────────────────┐ │   ┌──────────────────┐\n │   level begin    │ │   │    level end     │\n └──────────────────┘ │   └──────────────────┘\n                      │                       \n                      │                       \n                      │                       \n```\n"
+          },
+          "period": {
+            "nullable": false,
+            "$ref": "#/components/schemas/Period"
+          }
+        }
       },
       "Descriptor": {
         "type": "object",
@@ -1462,92 +1543,23 @@
             "nullable": false
           },
           "key": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "timestamp"
-                ],
-                "nullable": false,
-                "description": "The engine has been optimized to process equidistant timestamps.\nHowever, arbitrary 64 bit keys can be processed but will degrade performance and efficiency seriously. \nThe worst case scenario is to store random numbers.\nAll build-in functions expect a timestamp anyway.\n"
-              },
-              "unit": {
-                "type": "string",
-                "enum": [
-                  "seconds"
-                ],
-                "description": "The unit of the key must be in _seconds_. \nAlthough, the storage engine supports just a 64 bit signed integer, all build-in time-based pipeline functions\nexpect a second precision.\n"
-              }
-            }
+            "$ref": "#/components/schemas/KeySpec"
           },
           "value": {
-            "type": "object",
-            "properties": {
-              "unit": {
-                "type": "string",
-                "description": "The unit of the value. This is nearly arbitrary and is usually derived from physical base units.\nTypical examples are kWh, rpm or km/h.\n"
-              },
-              "aggregation": {
-                "type": "string",
-                "enum": [
-                  "max",
-                  "min",
-                  "avg",
-                  "sum",
-                  "none",
-                  "other"
-                ],
-                "description": "A data aggregation takes a bunch of values and applies a non-inverse function on it. This always means that there is a loss of information. For example, the typical 10 minute or 15 minute values have been probably aggregated from a much faster source, like a 16kHz oscilloscope sampling."
-              },
-              "scale": {
-                "type": "integer",
-                "format": "int64",
-                "description": "mistral can only process integers. \nSo in case of floats or decimals this indicates the scale to divide or multiply the numbers before inserting or after querying.\nThis always has to be done explicitly to match the actual defined _unit_.\n"
-              }
-            }
+            "$ref": "#/components/schemas/ValueSpec"
           },
           "sampling": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "periodStart",
-                  "periodEnd",
-                  "instant",
-                  "levelBegin",
-                  "levelEnd"
-                ],
-                "description": "The sampling describes how the combination of a key-value has been measured.\nThe following five types have been defined:\n\n## periodStart & periodEnd\nThe most natural kind is a period, where a sensor has created a bunch of samples over time.\nAt the end, there is always an aggregation involved, to return an associated single value.\n_periodStart_ defines, that the timestamp represents the beginning of the measurement.\n_periodEnd_ defines, that the timestamp represents the end of the measurement.\n\n\n```\n        0s                              600s          \n  ─────────┬────────────────────────────────┬───────▶   \n           │ aggregation period (e.g. 600s) │           \n           │   value (e.g. sums up to 42)   │           \n           └────────────────────────────────┘           \n           ▲              ▲                 ▲           \n           │            <-│->               │           \n           │              │                 │           \n           │              │                 │           \n  ┌──────────────────┐    │                 │           \n  │ start-aggregated │    │                 │           \n  └──────────────────┘    │                 │           \n                          │                 │           \n                          │                 │           \n                          │         ┌──────────────────┐\n                          │         │  end-aggregated  │\n                          │         └──────────────────┘\n                          │                             \n            ┌─────────────┴─────────────┐               \n            │   e.g. start of day in    │               \n            │     Australia/Eucla       │               \n            │                           │               \n            └───────────────────────────┘               \n```\n\n## instant\nAlthough technically there is always a sampling period involved to capture a measurement, an instant pretends \nthat there is no relevant aggregation to represent.\nMathematically, this means, that the value has been captured within an infinite small amount of time in \nexact that moment.\n\n## levelBegin & levelEnd\nLevel defines a state of the value, which describes a system until the next time indexed value.\n_levelBegin_ defines that the value is valid since (inclusive) the timestamp until the next timestamp is found.\n_levelEnd_ defines that the value is valid until (inclusive) the timestamp for any time until the first preceeding\ntimestamp, the value is valid.\n\n```\n                      │                       \n                      │                       \n                      │                       \n                      │                       \n ──────────────────   │   ─────────────────── \n ▲ ───────────▶       │         ◀───────────▲ \n │                    │                     │ \n │                    │                     │ \n │                    │                     │ \n ┌──────────────────┐ │   ┌──────────────────┐\n │   level begin    │ │   │    level end     │\n └──────────────────┘ │   └──────────────────┘\n                      │                       \n                      │                       \n                      │                       \n```\n"
-              },
-              "period": {
-                "nullable": false,
-                "$ref": "#/components/schemas/Period"
-              }
-            }
+            "$ref": "#/components/schemas/SamplingSpec"
           },
           "sources": {
             "deprecated": true,
-            "description": "Contains arbitrary key-object mappings to attach unspecified meta data to match these against\nthird party data sources. Actually _xattr_ is the same.\n",
-            "type": "object",
-            "additionalProperties": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "description": "the unique id of the source",
-                  "type": "string"
-                },
-                "value": {
-                  "type": "object"
-                }
-              }
-            }
+            "description": "Deprecated: Contains arbitrary key-object mappings to attach unspecified meta data to match these against\nthird party data sources. Use _xattr_ instead.\n",
+            "type": "object"
           },
           "xattr": {
             "type": "object",
             "nullable": false,
-            "description": "Arbitrary optional map of any kind of attributes.\nThis data holder can be used, to attach external or internal meta data to improve data interoperability\nor synchronizations.\nMistral never evaluates this and custom kernels should not do that either.\n"
+            "description": "Arbitrary optional map of any kind of attributes.\nThis data holder can be used, to attach external or internal meta data to improve data interoperability\nor synchronizations within your middleware.\nMistral never evaluates this and custom kernels should not do that either.\n"
           }
         }
       },

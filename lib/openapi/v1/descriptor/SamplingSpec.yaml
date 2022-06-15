@@ -1,0 +1,80 @@
+type: object
+required:
+  - type
+  - period
+properties:
+  type:
+    type: string
+    nullable: false
+    enum: [ periodStart, periodEnd, instant, levelBegin, levelEnd ]
+    description: |
+      The sampling describes how the combination of a key-value has been measured.
+      The following five types have been defined:
+      
+      ## periodStart & periodEnd
+      The most natural kind is a period, where a sensor has created a bunch of samples over time.
+      At the end, there is always an aggregation involved, to return an associated single value.
+      _periodStart_ defines, that the timestamp represents the beginning of the measurement.
+      _periodEnd_ defines, that the timestamp represents the end of the measurement.
+      
+      
+      ```
+              0s                              600s          
+        ─────────┬────────────────────────────────┬───────▶   
+                 │ aggregation period (e.g. 600s) │           
+                 │   value (e.g. sums up to 42)   │           
+                 └────────────────────────────────┘           
+                 ▲              ▲                 ▲           
+                 │            <-│->               │           
+                 │              │                 │           
+                 │              │                 │           
+        ┌──────────────────┐    │                 │           
+        │ start-aggregated │    │                 │           
+        └──────────────────┘    │                 │           
+                                │                 │           
+                                │                 │           
+                                │         ┌──────────────────┐
+                                │         │  end-aggregated  │
+                                │         └──────────────────┘
+                                │                             
+                  ┌─────────────┴─────────────┐               
+                  │   e.g. start of day in    │               
+                  │     Australia/Eucla       │               
+                  │                           │               
+                  └───────────────────────────┘               
+      ```
+      
+      ## instant
+      Although technically there is always a sampling period involved to capture a measurement, an instant pretends 
+      that there is no relevant aggregation to represent.
+      Mathematically, this means, that the value has been captured within an infinite small amount of time in 
+      exact that moment.
+      
+      ## levelBegin & levelEnd
+      Level defines a state of the value, which describes a system until the next time indexed value.
+      _levelBegin_ defines that the value is valid since (inclusive) the timestamp until the next timestamp is found.
+      _levelEnd_ defines that the value is valid until (inclusive) the timestamp for any time until the first preceeding
+      timestamp, the value is valid.
+      
+      ```
+                            │                       
+                            │                       
+                            │                       
+                            │                       
+       ──────────────────   │   ─────────────────── 
+       ▲ ───────────▶       │         ◀───────────▲ 
+       │                    │                     │ 
+       │                    │                     │ 
+       │                    │                     │ 
+       ┌──────────────────┐ │   ┌──────────────────┐
+       │   level begin    │ │   │    level end     │
+       └──────────────────┘ │   └──────────────────┘
+                            │                       
+                            │                       
+                            │                       
+      ```
+  
+
+  period:
+    nullable: false
+    $ref: '../time/Period.yaml'

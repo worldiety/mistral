@@ -1,0 +1,23 @@
+type: object
+required:
+  - unit
+  - type
+properties:
+  type:
+    type: string
+    enum: [ timestamp ]
+    nullable: false
+    description: |
+      The engine has been optimized to process equidistant timestamps.
+      However, arbitrary 64 bit keys can be processed but will degrade performance and efficiency seriously. 
+      The worst case scenario is to store random numbers.
+      All build-in functions expect a timestamp anyway.
+
+  unit:
+    type: string
+    nullable: false
+    enum: [ seconds ]
+    description: |
+      The unit of the key must be in _seconds_. 
+      Although, the storage engine supports just a 64 bit signed integer, all build-in time-based pipeline functions
+      expect a second precision.

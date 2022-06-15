@@ -1,0 +1,26 @@
+type: object
+required:
+  - unit
+  - aggregation
+  - scale
+properties:
+  unit:
+    type: string
+    description: |
+      The unit of the value. This is nearly arbitrary and is usually derived from physical base units.
+      Typical examples are kWh, rpm or km/h.
+  aggregation:
+    type: string
+    enum: [ max, min, avg, sum, none, other ]
+    description:
+      A data aggregation takes a bunch of values and applies a non-inverse function on it.
+      This always means that there is a loss of information.
+      For example, the typical 10 minute or 15 minute values have been probably aggregated
+      from a much faster source, like a 16kHz oscilloscope sampling.
+  scale:
+    type: integer
+    format: int64
+    description: |
+      mistral can only process integers. 
+      So in case of floats or decimals this indicates the scale to divide or multiply the numbers before inserting or after querying.
+      This always has to be done explicitly to match the actual defined _unit_.
