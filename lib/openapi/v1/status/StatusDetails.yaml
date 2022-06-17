@@ -7,8 +7,12 @@ properties:
   componentType:
     type: string
     description: (optional) SHOULD be present if componentName is present. Type of the component. Could be one of component, datastore, system or an uri.
+  status:
+    type: string
+    enum: [ pass, warn, fail ]
+    description: e.g. pass or fail or warn.
+    nullable: false
   metricValue:
-    type: object
     description: (optional) could be any valid JSON value, such as string, number, object, array or literal.
   metricUnit:
     type: string
