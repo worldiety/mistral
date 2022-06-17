@@ -9,7 +9,7 @@ required:
 properties:
   status:
     type: string
-    enum: [pass, warn, fail]
+    enum: [ pass, warn, fail ]
     description: e.g. pass or fail or warn.
     nullable: false
   version:
@@ -20,11 +20,26 @@ properties:
     type: string
     description: a semantic version like v1.2.3.
     nullable: false
+  notes:
+    type: array
+    description: (optional) array of notes relevant to current state of health.
+  output:
+    type: string
+    description: (optional) raw error output, in case of “fail” or “warn” states. This field SHOULD be omitted for "pass" state.
   description:
     type: string
     description: some details about the service.
     nullable: false
+  links:
+    type: array
+    description: (optional) an array of objects containing link relations and URIs [RFC3986] for external links that MAY contain more information about the health of the endpoint.
+    items:
+      type: object
+  serviceID:
+    type: string
+    description: (optional) unique identifier of the service, in the application scope. (worldiety.org/mistral)
   details:
     type: object
     description: arbitrary map to describe status of components.
-    nullable: false
+    additionalProperties:
+      $ref: ./StatusDetails.yaml

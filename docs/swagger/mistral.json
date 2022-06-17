@@ -1296,6 +1296,44 @@
       }
     },
     "schemas": {
+      "StatusDetails": {
+        "type": "object",
+        "description": "This type models the details object draft from https://tools.ietf.org/id/draft-inadarei-api-health-check-01.html.",
+        "properties": {
+          "componentId": {
+            "type": "string",
+            "description": "(optional) unique identifier of an instance of a specific sub-component/dependency of a service. Multiple objects with the same componentID MAY appear in the details, if they are from different nodes."
+          },
+          "componentType": {
+            "type": "string",
+            "description": "(optional) SHOULD be present if componentName is present. Type of the component. Could be one of component, datastore, system or an uri."
+          },
+          "metricValue": {
+            "type": "object",
+            "description": "(optional) could be any valid JSON value, such as string, number, object, array or literal."
+          },
+          "metricUnit": {
+            "type": "string",
+            "description": "(optional) SHOULD be present if metricValue is present."
+          },
+          "time": {
+            "type": "string",
+            "format": "ISO8601",
+            "description": "the date-time, in ISO8601 format, at which the reading of the metricValue was recorded. This assumes that the value can be cached and the reading typically doesn’t happen in real time, for performance and scalability purposes."
+          },
+          "output": {
+            "type": "string",
+            "description": "(optional) raw error output, in case of “fail” or “warn” states. This field SHOULD be omitted for “pass” state."
+          },
+          "links": {
+            "type": "array",
+            "description": "(optional) an array of objects containing link relations and URIs [RFC3986] for external links that MAY contain more information about the health of the endpoint.",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
       "Status": {
         "type": "object",
         "description": "A Status follows more or less the https://tools.ietf.org/id/draft-inadarei-api-health-check-01.html draft.\n",
@@ -1326,15 +1364,36 @@
             "description": "a semantic version like v1.2.3.",
             "nullable": false
           },
+          "notes": {
+            "type": "array",
+            "description": "(optional) array of notes relevant to current state of health."
+          },
+          "output": {
+            "type": "string",
+            "description": "(optional) raw error output, in case of “fail” or “warn” states. This field SHOULD be omitted for \"pass\" state."
+          },
           "description": {
             "type": "string",
             "description": "some details about the service.",
             "nullable": false
           },
+          "links": {
+            "type": "array",
+            "description": "(optional) an array of objects containing link relations and URIs [RFC3986] for external links that MAY contain more information about the health of the endpoint.",
+            "items": {
+              "type": "object"
+            }
+          },
+          "serviceID": {
+            "type": "string",
+            "description": "(optional) unique identifier of the service, in the application scope. (worldiety.org/mistral)"
+          },
           "details": {
             "type": "object",
             "description": "arbitrary map to describe status of components.",
-            "nullable": false
+            "additionalProperties": {
+              "$ref": "#/components/schemas/StatusDetails"
+            }
           }
         }
       },

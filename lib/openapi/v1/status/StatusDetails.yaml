@@ -1,0 +1,27 @@
+type: object
+description: This type models the details object draft from https://tools.ietf.org/id/draft-inadarei-api-health-check-01.html.
+properties:
+  componentId:
+    type: string
+    description: (optional) unique identifier of an instance of a specific sub-component/dependency of a service. Multiple objects with the same componentID MAY appear in the details, if they are from different nodes.
+  componentType:
+    type: string
+    description: (optional) SHOULD be present if componentName is present. Type of the component. Could be one of component, datastore, system or an uri.
+  metricValue:
+    type: object
+    description: (optional) could be any valid JSON value, such as string, number, object, array or literal.
+  metricUnit:
+    type: string
+    description: (optional) SHOULD be present if metricValue is present.
+  time:
+    type: string
+    format: ISO8601
+    description: the date-time, in ISO8601 format, at which the reading of the metricValue was recorded. This assumes that the value can be cached and the reading typically doesn’t happen in real time, for performance and scalability purposes.
+  output:
+    type: string
+    description: (optional) raw error output, in case of “fail” or “warn” states. This field SHOULD be omitted for “pass” state.
+  links:
+    type: array
+    description: (optional) an array of objects containing link relations and URIs [RFC3986] for external links that MAY contain more information about the health of the endpoint.
+    items:
+      type: object
