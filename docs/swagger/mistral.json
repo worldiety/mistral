@@ -1299,6 +1299,11 @@
       "StatusDetails": {
         "type": "object",
         "description": "This type models the details object draft from https://tools.ietf.org/id/draft-inadarei-api-health-check-01.html.",
+        "required": [
+          "status",
+          "time",
+          "output"
+        ],
         "properties": {
           "componentId": {
             "type": "string",
@@ -1350,7 +1355,9 @@
           "status",
           "version",
           "releaseID",
-          "description"
+          "description",
+          "details",
+          "serviceID"
         ],
         "properties": {
           "status": {
@@ -1401,7 +1408,22 @@
             "type": "object",
             "description": "arbitrary map to describe status of components.",
             "additionalProperties": {
-              "$ref": "#/components/schemas/StatusDetails"
+              "type": "object",
+              "required": [
+                "key",
+                "values"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "values": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StatusDetails"
+                  }
+                }
+              }
             }
           }
         }

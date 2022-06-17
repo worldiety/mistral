@@ -6,6 +6,8 @@ required:
   - version
   - releaseID
   - description
+  - details
+  - serviceID
 properties:
   status:
     type: string
@@ -42,4 +44,16 @@ properties:
     type: object
     description: arbitrary map to describe status of components.
     additionalProperties:
-      $ref: ./StatusDetails.yaml
+      type: object
+      required:
+        - key
+        - values
+      properties:
+        key:
+          type: string
+        values:
+          type: array
+          items:
+            $ref: ./StatusDetails.yaml
+
+
